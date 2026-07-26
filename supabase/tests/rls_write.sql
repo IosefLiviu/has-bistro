@@ -214,21 +214,18 @@ update public.categories c set sort = o.sort
 -- Garanțiile de afișare
 -- ════════════════════════════════════════════════════════════════════════════
 
--- Proba 11 — o categorie activa fara imagine este refuzata de baza.
+-- Proba 11 — o categorie de GRILA, activa si fara imagine, e refuzata de baza.
 --
 -- Prinde EXACT check_violation, nu `others`. La prima rulare proba trecea
 -- fals: coloana image_url nu exista inca, deci inserarea esua cu "column does
 -- not exist" — un esec adevarat mascat drept succes.
---
--- Pica pana cand se decide ce facem cu `sosuri`, singura categorie activa fara
--- imagine. Constrangerea n-are cum sa fie adaugata cat timp ea incalca regula.
 do $$
 declare blocat boolean := false;
 begin
   perform pg_temp.act_as('00000000-0000-4000-a000-000000000002');
   begin
-    insert into public.categories (slug, name, sort, active, image_url)
-    values ('zzz-proba-fara-imagine','Probă fără imagine', 998, true, null);
+    insert into public.categories (slug, name, sort, active, show_in_grid, image_url)
+    values ('zzz-proba-fara-imagine','Probă fără imagine', 998, true, true, null);
     blocat := false;
   exception when check_violation then blocat := true;
            when others then blocat := false;
@@ -272,6 +269,31 @@ begin
   end;
   perform set_config('role','postgres',true);
   perform pg_temp.nota(13, ok, 'anonimul NU poate insera comenzi direct');
+end $$;
+
+-- Proba 18 — o categorie de EXTRA-URI n-are nevoie de imagine.
+-- Cazul `sosuri`: exista ca sa organizeze produse mici, nu e desenata nicaieri,
+-- deci constrangerea n-are ce sa ceara de la ea.
+do $$
+declare ok boolean := false;
+begin
+  perform pg_temp.act_as('00000000-0000-4000-a000-000000000002');
+  begin
+    insert into public.categories (slug, name, sort, active, show_in_grid, image_url)
+    values ('zzz-proba-extra','Probă extra-uri', 996, true, false, null);
+    ok := true;
+  exception when others then ok := false;
+  end;
+  perform set_config('role','postgres',true);
+  perform pg_temp.nota(18, ok, 'categoria de extra-uri e permisa fara imagine');
+end $$;
+
+-- Proba 19 — sosuri e chiar marcata ca fiind in afara grilei
+do $$
+declare in_grila boolean;
+begin
+  select show_in_grid into in_grila from public.categories where slug = 'sosuri';
+  perform pg_temp.nota(19, in_grila = false, 'sosuri e in afara grilei');
 end $$;
 
 -- ════════════════════════════════════════════════════════════════════════════
