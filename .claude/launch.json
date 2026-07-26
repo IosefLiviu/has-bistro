@@ -2,10 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "hash-bistro-dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3000
+      "name": "hash-static",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4321"],
+      "port": 4321
+    },
+    {
+      "name": "hash-admin",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4322"],
+      "port": 4322
     }
   ]
 }

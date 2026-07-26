@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>HASH · Administrare</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./admin.css">
+</head>
+<body>
+
+<div id="app"></div>
+<div id="toasts"></div>
+
+<script type="module">
+import { currentStaff, signIn, signOut, isManager, el, esc, toast } from "./admin-core.js";
+
+const app = document.getElementById("app");
+
+/* ── Ecranele. Cele nefăcute încă își spun asta pe față, nu se prefac. ───── */
+const ECRANE = [
+  { id:"catalog",  nume:"Catalog",       modul:() => import("./screens/catalog.js") },
+  { id:"comenzi",  nume:"Comenzi",       curand:"Are nevoie de Edge Function-ul de plasare a comenzii." },
+  { id:"zilei",    nume:"Meniul zilei",  curand:null },
+  { id:"promo",    nume:"Promoții",      curand:null },
+  { id:"clienti",  nume:"Clienți",       curand:null },
+  { id:"rapoarte", nume:"Rapoarte",      curand:null },
+  { id:"setari",   nume:"Setări",        curand:null },
+];
+
+function ecranCurent(){
+  const id = (location.hash.replace(/^#\/?/, "") || "catalog");
+  return ECRANE.find(e => e.id === id) ?? ECRANE[0];
+}
+
+/* ── Login ──────────────────────────────────────────────────────────────── */
+function randeazaLogin(){
+  app.innerHTML = "";
+  const form = el(`
+    <form class="login">
+      <div class="card pad">
+        <div class="kick">HASH Bistro &amp; Take Away</div>
+        <h1 style="margin-top:6px">Administrare</h1>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:22px">
+          <div class="field">
+            <label for="e">Email</label>
+            <input id="e" type="email" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="p">Parolă</label>
+            <input id="p" type="password" autocomplete="current-password" required>
+          </div>
+          <p id="err" class="tiny" style="color:var(--red);font-weight:700;display:none"></p>
+          <button class="btn" type="submit">Intră în panou</button>
+        </div>
+      </div>
+    </form>`);
+  const err = form.querySelector("#err");
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const b = form.querySelector("button");
+    b.disabled = true; b.innerHTML = '<span class="spin"></span>';
+    err.style.display = "none";
+    try {
+      await signIn(form.querySelector("#e").value, form.querySelector("#p").value);
+      porneste();
+    } catch (e) {
+      err.textContent = e.message;
+      err.style.display = "block";
+      b.disabled = false; b.textContent = "Intră în panou";
+    }
+  });
+  app.appendChild(form);
+}
+
+/* ── Shell ──────────────────────────────────────────────────────────────── */
+function randeazaShell(staff){
+  app.innerHTML = "";
+  const shell = el(`
+    <div class="shell">
+      <aside class="side">
+        <div class="brand"><b>HASH</b><span>Administrare</span></div>
+        <nav></nav>
+        <div class="foot">
+          <b>${esc(staff.name)}</b>
+          ${esc({admin:"Administrator",manager:"Manager",staff:"Personal"}[staff.role] ?? staff.role)}
+          <button class="btn ghost sm" id="iesi"
+            style="margin-top:10px;width:100%;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)">
+            Ieși din cont
+          </button>
+        </div>
+      </aside>
+      <div class="main">
+        <div class="topbar">
+          <button class="btn ghost icon" id="meniu" style="display:none">☰</button>
+          <h2 id="titlu" class="grow"></h2>
+        </div>
+        <div class="outlet" id="outlet"></div>
+      </div>
+    </div>`);
+
+  const nav = shell.querySelector("nav");
+  for (const e of ECRANE) {
+    nav.appendChild(el(`<a href="#/${e.id}" data-id="${e.id}">${esc(e.nume)}</a>`));
+  }
+  shell.querySelector("#iesi").addEventListener("click", signOut);
+
+  const bMeniu = shell.querySelector("#meniu");
+  const laturi = shell.querySelector(".side");
+  if (matchMedia("(max-width:820px)").matches) bMeniu.style.display = "inline-flex";
+  bMeniu.addEventListener("click", () => laturi.classList.toggle("open"));
+
+  app.appendChild(shell);
+  return shell;
+}
+
+/* ── Rutare ─────────────────────────────────────────────────────────────── */
+let shell = null, staff = null;
+
+async function randeazaEcran(){
+  const ecran = ecranCurent();
+  const outlet = shell.querySelector("#outlet");
+  shell.querySelector("#titlu").textContent = ecran.nume;
+  shell.querySelectorAll(".side a").forEach(a =>
+    a.classList.toggle("on", a.dataset.id === ecran.id));
+  shell.querySelector(".side").classList.remove("open");
+  outlet.innerHTML = "";
+
+  if (!ecran.modul) {
+    outlet.appendChild(el(`
+      <div class="card empty">
+        <h3 style="color:var(--faint)">Încă nu e construit</h3>
+        <p class="tiny" style="margin-top:8px">
+          ${esc(ecran.curand ?? "Vine într-o rundă următoare.")}
+        </p>
+      </div>`));
+    return;
+  }
+  const mod = await ecran.modul();
+  await mod.monteaza(outlet, staff);
+}
+
+async function porneste(){
+  staff = await currentStaff({ refresh: true });
+  if (!staff) return randeazaLogin();
+  shell = randeazaShell(staff);
+  await randeazaEcran();
+}
+
+addEventListener("hashchange", () => { if (shell) randeazaEcran(); });
+porneste();
+</script>
+</body>
+</html>

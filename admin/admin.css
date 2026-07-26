@@ -1,0 +1,208 @@
+/* HASH Bistro — Admin v2
+   Tokeni preluați 1:1 din H'ash Site v2.dc.html. Nimic inventat. */
+
+:root{
+  --brown:#451400;
+  --red:#AD2118;
+  --red-d:#8E1A13;
+  --gold:#B68207;
+  --green:#90A035;
+  --line:rgba(69,20,0,.14);
+  --line-2:rgba(69,20,0,.28);
+  --muted:rgba(69,20,0,.62);
+  --faint:rgba(69,20,0,.40);
+  --bg:#FFFFFF;
+  --bg-2:#F7F5F3;
+  --bg-3:#F0ECE8;
+
+  --disp:'Barlow Semi Condensed','Arial Narrow',Arial,sans-serif;
+  --dispx:'Barlow Condensed','Arial Narrow',Arial,sans-serif;
+  --body:Nunito,'Helvetica Neue',Arial,sans-serif;
+
+  --r:4px;
+  --sidebar:232px;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--body);
+  font-size:15px;
+  color:var(--brown);
+  background:var(--bg-2);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── Tipografie ──────────────────────────────────────────────────────────── */
+h1,h2,h3{font-family:var(--disp);font-weight:700;text-transform:uppercase;
+  letter-spacing:.005em;line-height:1.05;margin:0}
+h1{font-size:32px}
+h2{font-size:22px}
+h3{font-size:17px}
+/* Cifrele mari — numere de comandă, sume — pe condensed, ca pe site */
+.num{font-family:var(--dispx);font-weight:700;font-variant-numeric:tabular-nums}
+.kick{font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--red)}
+.muted{color:var(--muted)}
+.faint{color:var(--faint)}
+.tiny{font-size:12.5px}
+
+/* ── Butoane ─────────────────────────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:40px;padding:0 20px;border:0;border-radius:var(--r);
+  font-family:var(--body);font-size:14px;font-weight:800;
+  letter-spacing:.02em;text-transform:uppercase;
+  background:var(--red);color:#fff;cursor:pointer;
+  transition:background .15s, opacity .15s;white-space:nowrap;
+}
+.btn:hover{background:var(--red-d)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--brown);
+  box-shadow:inset 0 0 0 1px var(--line-2)}
+.btn.ghost:hover{background:var(--bg-3)}
+.btn.sm{height:32px;padding:0 13px;font-size:12.5px}
+.btn.danger{background:transparent;color:var(--red);
+  box-shadow:inset 0 0 0 1px rgba(173,33,24,.35)}
+.btn.danger:hover{background:rgba(173,33,24,.07)}
+.btn.icon{width:32px;height:32px;padding:0}
+
+/* ── Câmpuri ─────────────────────────────────────────────────────────────── */
+.field{display:flex;flex-direction:column;gap:5px}
+.field > label{font-size:12px;font-weight:800;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted)}
+input[type=text],input[type=email],input[type=password],input[type=number],
+input[type=search],textarea,select{
+  font-family:var(--body);font-size:15px;color:var(--brown);
+  background:#fff;border:1px solid var(--line-2);border-radius:var(--r);
+  padding:9px 11px;outline:none;width:100%;
+}
+input:focus,textarea:focus,select:focus{border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(182,130,7,.15)}
+textarea{resize:vertical;min-height:74px}
+
+/* ── Suprafețe ───────────────────────────────────────────────────────────── */
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r)}
+.pad{padding:18px}
+
+/* ── Shell ───────────────────────────────────────────────────────────────── */
+.shell{display:flex;min-height:100vh}
+.side{
+  width:var(--sidebar);flex:0 0 var(--sidebar);background:var(--brown);
+  color:#fff;display:flex;flex-direction:column;position:sticky;top:0;
+  height:100vh;
+}
+.side .brand{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.12)}
+.side .brand b{font-family:var(--disp);font-size:21px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.02em;display:block}
+.side .brand span{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(255,255,255,.55)}
+.side nav{padding:10px 0;flex:1;overflow-y:auto}
+.side a{
+  display:flex;align-items:center;gap:10px;padding:10px 18px;
+  color:rgba(255,255,255,.72);text-decoration:none;font-size:14.5px;font-weight:700;
+  border-left:3px solid transparent;
+}
+.side a:hover{color:#fff;background:rgba(255,255,255,.06)}
+.side a.on{color:#fff;background:rgba(255,255,255,.10);border-left-color:var(--gold)}
+.side .foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.12);
+  font-size:12.5px;color:rgba(255,255,255,.55)}
+.side .foot b{display:block;color:#fff;font-size:14px}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{
+  display:flex;align-items:center;gap:14px;padding:16px 26px;
+  background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;
+}
+.outlet{padding:24px 26px 60px;flex:1}
+.row{display:flex;align-items:center;gap:10px}
+.grow{flex:1;min-width:0}
+
+/* ── Insigne ─────────────────────────────────────────────────────────────── */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;
+  border-radius:999px;font-size:11.5px;font-weight:800;letter-spacing:.09em;
+  text-transform:uppercase}
+.pill.ok{background:rgba(144,160,53,.16);color:#5F6B1E}
+.pill.off{background:var(--bg-3);color:var(--faint)}
+.pill.warn{background:rgba(182,130,7,.16);color:#7A5705}
+.pill.bad{background:rgba(173,33,24,.12);color:var(--red)}
+
+/* ── Liste sortabile ─────────────────────────────────────────────────────── */
+.list{display:flex;flex-direction:column}
+.item{
+  display:flex;align-items:center;gap:12px;padding:10px 14px;
+  border-bottom:1px solid var(--line);background:#fff;
+}
+.item:last-child{border-bottom:0}
+.item.drag{opacity:.35}
+.item.over{box-shadow:inset 0 2px 0 var(--gold)}
+.grip{cursor:grab;color:var(--faint);flex:0 0 auto;user-select:none;
+  font-size:17px;line-height:1;padding:0 2px}
+.grip:active{cursor:grabbing}
+.thumb{width:44px;height:44px;flex:0 0 44px;border-radius:var(--r);
+  background:var(--bg-3) center/cover no-repeat}
+.thumb.none{display:grid;place-items:center;color:var(--faint);font-size:18px;
+  box-shadow:inset 0 0 0 1px var(--line-2)}
+
+/* ── Previzualizarea grilei ──────────────────────────────────────────────── */
+/* Aceleași reguli ca site-ul, ca previzualizarea să nu mintă. */
+.gridprev{background:var(--bg-3);border-radius:var(--r);padding:18px;overflow:auto}
+.catgrid{display:flex;flex-wrap:wrap;justify-content:center;gap:18px 14px;
+  max-width:100%;margin:0 auto}
+.catcard{display:flex;flex-direction:column;align-items:center;text-align:center}
+.catcard .ph{width:100%;aspect-ratio:1/1;background:#fff center/cover no-repeat;
+  border-radius:2px}
+.catcard .nm{font-family:var(--disp);font-weight:700;text-transform:uppercase;
+  font-size:12px;margin-top:6px;line-height:1.1}
+.gridprev[data-cols="3"] .catcard{flex:0 1 calc((100% - 28px)/3)}
+.gridprev[data-cols="2"] .catcard{flex:0 1 calc((100% - 14px)/2)}
+.gridprev[data-cols="1"] .catcard{flex:0 1 100%}
+
+/* ── Catalog: două panouri ───────────────────────────────────────────────
+   Aici, nu in JS. O prima versiune colapsa coloanele dintr-un matchMedia la
+   randare — dar mutatia era unidirectionala, deci daca fereastra era ingusta
+   la primul render ramanea pe o coloana pentru totdeauna. Un media query se
+   autocorecteaza la redimensionare. */
+.pane2{display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:18px;
+  align-items:start}
+@media(max-width:900px){.pane2{grid-template-columns:1fr}}
+
+/* ── Sertar lateral ──────────────────────────────────────────────────────── */
+.scrim{position:fixed;inset:0;background:rgba(69,20,0,.45);z-index:60;
+  display:flex;justify-content:flex-end}
+.sheet{width:min(560px,100%);background:var(--bg-2);height:100%;overflow-y:auto;
+  display:flex;flex-direction:column}
+.sheet header{display:flex;align-items:center;gap:12px;padding:16px 20px;
+  background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:1}
+.sheet .body{padding:20px;display:flex;flex-direction:column;gap:16px}
+.sheet footer{padding:16px 20px;background:#fff;border-top:1px solid var(--line);
+  position:sticky;bottom:0;display:flex;gap:10px}
+
+/* ── Notificări ──────────────────────────────────────────────────────────── */
+#toasts{position:fixed;right:18px;bottom:18px;z-index:200;
+  display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--brown);color:#fff;padding:11px 15px;border-radius:var(--r);
+  font-size:14px;font-weight:700;max-width:380px;
+  box-shadow:0 6px 24px rgba(69,20,0,.25)}
+.toast.bad{background:var(--red)}
+.toast.ok{background:#5F6B1E}
+
+/* ── Login ───────────────────────────────────────────────────────────────── */
+.login{min-height:100vh;display:grid;place-items:center;padding:20px;
+  background:var(--brown)}
+.login .card{width:100%;max-width:380px;padding:32px}
+
+/* ── Stări ───────────────────────────────────────────────────────────────── */
+.empty{padding:44px 20px;text-align:center;color:var(--faint)}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.35);
+  border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation-duration:2s}}
+
+@media(max-width:820px){
+  .side{position:fixed;left:0;top:0;transform:translateX(-100%);z-index:80;
+    transition:transform .2s}
+  .side.open{transform:none}
+  .outlet{padding:18px 16px 60px}
+  .topbar{padding:12px 16px}
+}

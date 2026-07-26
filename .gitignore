@@ -26,3 +26,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generat de scripts/gen-admin-config.mjs
+admin/config.js
