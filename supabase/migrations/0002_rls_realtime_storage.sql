@@ -95,11 +95,11 @@ insert into public.settings (key, value, public) values
 ('restaurant', '{
   "name": "HASH Bistro & Take Away",
   "tagline": "Poftiți la masă!",
-  "phones": ["0722 305 909", "0730 411 042"],
+  "phones": ["0722 305 909"],
   "email": "",
-  "address_label": "București (setați adresa exactă din panoul de administrare)",
-  "lat": 44.4268,
-  "lng": 26.1025,
+  "address_label": "Str. Cireșar 22, Bragadiru, Ilfov",
+  "lat": 44.40316,
+  "lng": 25.98363,
   "events_note": "Organizăm evenimente și mese festive — maximum 30 persoane."
 }', true),
 ('delivery', '{
@@ -109,13 +109,13 @@ insert into public.settings (key, value, public) values
   "min_order": 40
 }', true),
 ('hours', '{
-  "mon": {"open": "10:00", "close": "22:00"},
-  "tue": {"open": "10:00", "close": "22:00"},
-  "wed": {"open": "10:00", "close": "22:00"},
-  "thu": {"open": "10:00", "close": "22:00"},
-  "fri": {"open": "10:00", "close": "22:00"},
-  "sat": {"open": "10:00", "close": "22:00"},
-  "sun": {"open": "10:00", "close": "22:00"},
+  "mon": {"open": "11:00", "close": "22:00"},
+  "tue": {"open": "11:00", "close": "22:00"},
+  "wed": {"open": "11:00", "close": "22:00"},
+  "thu": {"open": "11:00", "close": "22:00"},
+  "fri": {"open": "11:00", "close": "22:00"},
+  "sat": {"open": "11:00", "close": "22:00"},
+  "sun": {"open": "12:00", "close": "22:00"},
   "closed_dates": []
 }', true),
 ('ordering', '{

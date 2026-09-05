@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<title>H'ash Bistro &amp; Take-Away — Bragadiru</title>
+<link rel="icon" href="img/logo-hash-sm.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&amp;family=Barlow+Semi+Condensed:wght@500;600;700&amp;family=Nunito:wght@400;600;700;800&amp;display=swap">
+<script src="image-slot.js"></script>
+<script src="menu-data.js"></script>
+<!-- harta zonei de livrare: Leaflet 1.9.4 servit local (nu de pe CDN, ca sa nu pice
+     harta daca unpkg e indisponibil) + dale OpenStreetMap, fara cheie, cu atribuire -->
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+<script src="vendor/leaflet/leaflet.js"></script>
+<style>
+:root{
+  --brown:#451400;
+  --red:#AD2118;
+  --red-d:#8E1A13;
+  --gold:#B68207;
+  --green:#90A035;
+  --line:rgba(69,20,0,.14);
+  --muted:rgba(69,20,0,.62);
+  --disp:'Barlow Semi Condensed','Arial Narrow',Arial,sans-serif;
+  --dispx:'Barlow Condensed','Arial Narrow',Arial,sans-serif;
+  --body:Nunito,'Helvetica Neue',Arial,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{margin:0;background:#FFFFFF;font-family:var(--body);color:var(--brown)}
+/* rama punctată doar cât timp slotul e gol */
+image-slot{background:transparent;outline:none}
+image-slot:not([src]),image-slot[src=""]{background:#F1EDEA;outline:1px dashed rgba(69,20,0,.2);outline-offset:-1px}
+a{color:var(--brown)}a:hover{color:var(--red)}
+::selection{background:rgba(173,33,24,.2)}
+
+/* ---- typographic scale (Trade Gothic-style condensed display + Nunito body) ---- */
+.d1{font-family:var(--dispx);font-weight:700;text-transform:uppercase;line-height:.9;letter-spacing:.004em;margin:0}
+.d2{font-family:var(--disp);font-weight:700;text-transform:uppercase;line-height:1;letter-spacing:.005em;margin:0}
+.d3{font-family:var(--disp);font-weight:700;text-transform:uppercase;line-height:1.02;letter-spacing:.006em;margin:0}
+.kick{font-family:var(--body);font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--red)}
+.lede{font-family:var(--body);font-size:17px;font-weight:400;line-height:1.55;color:var(--muted)}
+
+/* ---- buttons: 4px radius, solid red, condensed caps ---- */
+.btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 22px;border:0;border-radius:4px;
+  background:var(--red);color:#FFFFFF;font-family:var(--disp);font-weight:700;font-size:20px;letter-spacing:.03em;
+  text-transform:uppercase;white-space:nowrap;cursor:pointer;transition:background .15s,transform .15s}
+/* culoarea e re-declarată pe :hover fiindcă regula globală a:hover o suprascrie
+   pe butoanele care sunt <a> (ar ieși text roșu pe fundal roșu) */
+.btn,.btn:visited{color:#FFFFFF}
+.btn:hover{background:var(--red-d);transform:translateY(-1px);color:#FFFFFF}
+.btn.lg{height:54px;padding:0 34px;font-size:25px}
+.btn.sm{height:34px;padding:0 16px;font-size:17px}
+.btn.ghost{background:transparent;color:var(--brown);border:2px solid var(--brown)}
+.btn.ghost:hover{background:var(--brown);color:#FFFFFF}
+.btn.onDark{background:#FFFFFF;color:var(--brown)}
+.btn.onDark:hover{background:#F0E9E4;color:var(--brown)}
+.btn.wide{width:100%}
+
+/* ---- eyebrow pill, exactly the ratio they use on category cards ---- */
+.pill{display:inline-block;font-family:var(--body);font-size:12px;font-weight:700;line-height:13px;text-transform:uppercase;
+  color:#FFFFFF;background:var(--brown);border-radius:12px;padding:4px 9px;letter-spacing:.04em}
+.pill.red{background:var(--red)}
+.pill.gold{background:var(--gold)}
+
+/* ---- banda rulantă cu anunțuri ---- */
+.mzband{background:var(--brown);height:64px;display:flex;align-items:center;gap:clamp(12px,2vw,28px);
+  padding:0 clamp(16px,2.6vw,44px);overflow:hidden}
+.ticker{flex:1 1 auto;min-width:0;overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 5%,#000 95%,transparent 100%);
+  mask-image:linear-gradient(90deg,transparent 0,#000 5%,#000 95%,transparent 100%)}
+.tickertrack{display:flex;align-items:center;width:max-content;animation:tick 42s linear infinite;will-change:transform}
+.mzband:hover .tickertrack{animation-play-state:paused}
+.tickitem{display:inline-flex;align-items:center;white-space:nowrap;padding-right:30px;
+  font-family:var(--disp);font-weight:700;font-size:clamp(18px,2vw,24px);letter-spacing:.03em;
+  text-transform:uppercase;color:#FFFFFF}
+.tickitem::after{content:"◆";margin-left:30px;font-size:10px;color:var(--gold)}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.tickertrack{animation:none}}
+@media(max-width:620px){
+  .mzband{height:54px;gap:10px}
+  .mzband .btn{height:32px;padding:0 13px;font-size:16px}
+  .tickitem{font-size:16px;padding-right:20px}
+  .tickitem::after{margin-left:20px;font-size:8px}
+}
+
+/* ---- hero: film pe desktop, fotografie pe mobil ---- */
+.herovid,.heroimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.heroimg{display:none}
+@media(max-width:760px){.herovid{display:none}.heroimg{display:block}}
+@media(prefers-reduced-motion:reduce){.herovid{display:none}.heroimg{display:block;animation:none}}
+
+/* ---- bară fixă mobil + buton WhatsApp ---- */
+.mobar{display:none}
+.wa{position:fixed;right:18px;bottom:18px;z-index:46;width:54px;height:54px;border-radius:50%;
+  background:#25D366;display:flex;align-items:center;justify-content:center;text-decoration:none;
+  box-shadow:0 8px 24px rgba(0,0,0,.22);transition:transform .18s,box-shadow .18s}
+.wa:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 12px 30px rgba(0,0,0,.28)}
+@media(max-width:760px){
+  .mobar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:45;
+    display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .mobar-btn{display:flex;align-items:center;justify-content:center;gap:9px;height:54px;border-radius:8px;
+    text-decoration:none;font-family:var(--disp);font-weight:700;font-size:19px;text-transform:uppercase;
+    letter-spacing:.04em;color:#FFFFFF;box-shadow:0 10px 26px rgba(69,20,0,.32);
+    transition:transform .14s,box-shadow .14s}
+  .mobar-btn:hover,.mobar-btn:visited{color:#FFFFFF}
+  .mobar-btn svg{flex:none;opacity:.9}
+  .mobar-btn.call{background:var(--red)}
+  .mobar-btn.nav{background:var(--brown)}
+  .mobar-btn:active{transform:translateY(2px);box-shadow:0 4px 14px rgba(69,20,0,.3)}
+  /* banda legală e ultimul element — o înalț ca butoanele flotante să nu-i acopere textul.
+     #footer pentru specificitate: regula de bază .legal e declarată mai jos în foaie. */
+  #footer .legal{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+  .wa{width:50px;height:50px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom))}
+}
+@media(prefers-reduced-motion:reduce){.mobar-btn{transition:none}}
+@media(prefers-reduced-motion:reduce){.wa{transition:none}}
+
+/* ---- footer ---- */
+.footgrid{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:48px;align-items:start}
+@media(max-width:900px){.footgrid{grid-template-columns:1fr 1fr;gap:44px}}
+@media(max-width:620px){.footgrid{grid-template-columns:1fr;gap:36px}}
+.flink-lg{font-family:var(--disp);font-weight:700;font-size:26px;line-height:1.15;text-transform:uppercase;
+  letter-spacing:.01em;color:var(--brown);cursor:pointer;transition:color .15s;width:fit-content}
+.flink-lg:hover{color:var(--red)}
+.flink{font-family:var(--body);font-size:15px;font-weight:700;color:var(--brown);cursor:pointer;
+  transition:color .15s;width:fit-content;text-decoration:none}
+.flink:hover{color:var(--red)}
+.fhead{font-family:var(--body);font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--brown);margin-bottom:14px}
+.soc{width:38px;height:38px;border-radius:50%;background:var(--brown);display:flex;align-items:center;
+  justify-content:center;cursor:pointer;transition:background .15s;flex:none}
+.soc:hover{background:var(--red)}
+.legal{background:#F4F2F1;padding:15px clamp(16px,2.6vw,44px)}
+.legal-row{max-width:1240px;margin:0 auto;display:flex;justify-content:center;flex-wrap:wrap;gap:8px 28px}
+.legal-row a{font-family:var(--body);font-size:12.5px;color:rgba(69,20,0,.7);text-decoration:none}
+.legal-row a:hover{color:var(--red);text-decoration:underline}
+
+/* ---- header ---- */
+.hbar{padding:0 clamp(16px,2.6vw,44px)!important;gap:clamp(14px,2vw,34px)!important}
+/* sigla originală, vector extras din flyer — o singură siglă, fără wordmark alături.
+   Se folosesc variantele îngroșate (-sm în header, -md în footer): cercul original
+   are 0,4 px la mărimea din header și se stinge în antialiasing. Vezi scripts/extract-logo.py.
+   .hspace ține locul header-ului fix. Peste 1080px sigla dictează înălțimea
+   (74+2×9+1); sub 1080 o dictează .navlink (82+1), indiferent cât e sigla. */
+.logo{display:block;height:74px;width:auto}
+.hspace{height:93px}
+@media(max-width:1080px){.logo{height:62px}.hspace{height:83px}}
+@media(max-width:640px){.logo{height:54px}}
+.flogo{display:block;height:160px;width:auto;margin:0 auto}
+@media(max-width:640px){.flogo{height:118px}}
+.hnav{white-space:nowrap}
+.hright{gap:clamp(10px,1.4vw,22px)!important}
+.navlink{position:relative;font-family:var(--body);font-size:16px;font-weight:700;letter-spacing:.02em;
+  text-transform:uppercase;color:var(--brown);cursor:pointer;padding:30px 0;transition:color .15s}
+.navlink:hover{color:var(--red)}
+/* linia roșie intră dinspre stânga; --uw o ține deschisă cât tabul e activ */
+.navlink::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--red);
+  transform:scaleX(var(--uw,0));transform-origin:left center;
+  transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.navlink:hover::after{transform:scaleX(1)}
+@media(prefers-reduced-motion:reduce){.navlink::after{transition:none}}
+/* aceeași linie, în meniul mic din dropdown */
+.mlink{position:relative;display:flex;align-items:baseline;gap:8px;padding:8px 0;cursor:pointer;
+  color:var(--brown);transition:color .15s}
+.mlink:hover{color:var(--red)}
+.mlink::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--red);
+  transform:scaleX(0);transform-origin:left center;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.mlink:hover::after{transform:scaleX(1)}
+@media(prefers-reduced-motion:reduce){.mlink::after{transition:none}}
+@media(max-width:1080px){.hlabel{display:none!important}}
+
+/* ---- avizier: slider cu bannere late 16:9 ---- */
+/* Bannerul se limita doar după lățime, deci pe un laptop de 13" ieșea 698px
+   înălțime dintr-un ecran de ~750px utili și nu încăpea. Acum lățimea e limitată
+   și de înălțimea ferestrei: 16/9 din 56vh. Pe monitor mare rezultă tot 1240px,
+   pe laptop se strânge singur, iar bannerul rămâne mereu ~56% din ecran. */
+.slider{position:relative;max-width:min(1240px,calc(56vh * 16 / 9));margin:0 auto;
+  container-type:inline-size}
+.sviewport{overflow:hidden;border-radius:4px}
+.strack{display:flex;transition:transform .55s cubic-bezier(.4,0,.2,1);will-change:transform}
+@media(prefers-reduced-motion:reduce){.strack{transition:none}}
+.sslide{flex:0 0 100%;min-width:100%}
+/* Tot ce e în banner se măsoară în cqw = 1% din lățimea bannerului, nu din
+   ecran. Așa proporțiile sunt identice pe orice monitor; înainte foloseam vw,
+   iar bannerul se oprea la 1240px în timp ce vw creștea la nesfârșit — de aici
+   diferențele mari între ecrane. Declarația în px/vw rămâne prima, ca rezervă
+   pentru browserele fără container queries. */
+.sbanner{position:relative;width:100%;aspect-ratio:16/9;background-color:#140803;overflow:hidden;
+  background-size:cover;background-position:center;container-type:inline-size}
+/* titlul stă în pagină, nu desenat în poză: diacriticele ies corecte și prețul
+   se schimbă fără să regenerăm bannerul. Fundalul vine gol din Higgsfield. */
+.sinner{position:absolute;inset:0;z-index:5;display:flex;align-items:center;
+  padding:clamp(14px,3.6vw,60px) clamp(16px,4.4vw,72px);
+  padding:4.4cqw 5.2cqw}
+.stext{display:flex;flex-direction:column;gap:clamp(7px,1.1vw,15px);max-width:46%}
+.stext{gap:1.1cqw}
+.shead{font-family:var(--dispx);font-weight:700;text-transform:uppercase;line-height:.9;
+  letter-spacing:.01em;margin:0;font-size:clamp(26px,5.4vw,76px);
+  background:linear-gradient(180deg,#FAE7B4 0%,#E3B662 44%,#B8842E 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 3px 16px rgba(0,0,0,.6))}
+/* podeaua în px ține titlul lizibil pe telefon, unde 6.2cqw ar da 22px */
+.shead{font-size:max(23px,6.2cqw)}
+.srule{height:1px;width:min(100%,320px);background:linear-gradient(90deg,rgba(227,182,98,.9),rgba(227,182,98,0))}
+.srule{width:min(100%,26cqw)}
+.ssub{font-family:var(--disp);font-weight:600;text-transform:uppercase;letter-spacing:.2em;
+  font-size:clamp(10px,1.3vw,18px);color:#F2EAD9;text-shadow:0 2px 12px rgba(0,0,0,.75)}
+.ssub{font-size:max(10px,1.5cqw)}
+/* pizzele reale din img/produse — PNG-uri cu fundal transparent, așezate peste blat */
+/* Umbrire discretă dinspre stânga, doar pe slide-urile cu titlul peste o zonă
+   cu detalii (pizza). Bannerul e o singură fotografie — fără decupaje lipite. */
+.pzscrim{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(90deg,rgba(9,4,1,.72) 0%,rgba(9,4,1,.34) 30%,rgba(9,4,1,0) 56%)}
+/* sigla stă peste zona liberă din stânga bannerului, în varianta albă */
+.slogo{position:absolute;top:clamp(14px,2.6vw,32px);left:clamp(14px,2.6vw,36px);
+  height:clamp(46px,7.6vw,106px);width:auto;z-index:6}
+.slogo{top:2.6cqw;left:2.9cqw;height:max(38px,8.4cqw)}
+.sbadge{position:absolute;top:16px;right:16px;z-index:6}
+.sbadge{top:2.2cqw;right:2.2cqw}
+/* insigna se scalează și ea cu bannerul, altfel pe telefon acoperă jumătate din el */
+.sbadge .pill{font-size:max(9px,.97cqw);line-height:1.1;padding:max(5px,.58cqw) max(9px,1.06cqw)}
+/* 28.125cqw = jumătate din înălțimea bannerului (56.25% din lățimea slider-ului).
+   Cu procent simplu, „top" s-ar fi raportat la înălțimea totală, care include
+   și textul de sub banner — de aceea săgețile stăteau prea jos. */
+.sarrow{position:absolute;top:calc(28.125cqw - 26px);z-index:3;width:52px;height:52px;border-radius:50%;
+  background:#FFFFFF;border:1px solid var(--line);box-shadow:0 8px 22px rgba(69,20,0,.18);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--brown);
+  font-size:26px;line-height:1;user-select:none;transition:background .15s,color .15s,border-color .15s}
+.sarrow:hover{background:var(--red);color:#FFFFFF;border-color:var(--red)}
+.sprev{left:-26px}
+.snext{right:-26px}
+@media(max-width:1320px){.sprev{left:12px}.snext{right:12px}}
+@media(max-width:640px){.sarrow{width:42px;height:42px;font-size:21px;top:calc(28.125cqw - 21px)}}
+/* Textul de sub banner stătea pe patru rânduri centrate: 190px, adică un sfert
+   din ecranul unui laptop de 13". Pe lat încape în ~86px, iar secțiunea întreagă
+   intră într-un ecran. Sub 760px revine la stivuit. */
+.scap{display:flex;align-items:center;justify-content:space-between;text-align:left;
+  gap:clamp(14px,2vw,34px);padding:clamp(15px,2.2vh,26px) 2px 0}
+.scapL{display:flex;flex-direction:column;gap:6px;min-width:0}
+.scapR{display:flex;flex-direction:column;align-items:center;gap:7px;flex:none}
+.scapmeta{font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:rgba(69,20,0,.45);white-space:nowrap}
+@media(max-width:760px){
+  .scap{flex-direction:column;align-items:center;text-align:center;gap:14px}
+  .scapL{align-items:center}
+}
+.sdots{display:flex;justify-content:center;gap:11px;margin-top:clamp(18px,2.6vh,30px)}
+.sdot{width:9px;height:9px;border-radius:50%;cursor:pointer;transition:transform .2s,background .2s}
+.sdot:hover{transform:scale(1.3)}
+
+/* ---- zona de livrare: harta + lista de cartiere ---- */
+.zonahead{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px 26px;margin-bottom:22px}
+.zonagrid{display:grid;grid-template-columns:1.55fr 1fr;gap:clamp(20px,2.4vw,40px);align-items:stretch}
+@media(max-width:900px){.zonagrid{grid-template-columns:1fr}}
+#harta{height:clamp(300px,46vh,460px);border-radius:4px;border:1px solid var(--line);
+  background:#EDE7E3;z-index:0}
+.leaflet-container{font-family:var(--body)}
+.zonalist{display:flex;flex-direction:column;gap:14px}
+.zchips{display:flex;flex-wrap:wrap;gap:8px}
+.zchip{display:inline-flex;align-items:baseline;gap:7px;padding:8px 13px;border-radius:999px;
+  border:1px solid var(--line);background:#FFFFFF;font-size:13.5px;font-weight:700;color:var(--brown)}
+.zchip span{font-size:11.5px;font-weight:600;color:rgba(69,20,0,.45)}
+.zleg{display:flex;flex-wrap:wrap;gap:8px 20px;padding-top:4px}
+.zlegi{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--brown)}
+.zsw{width:19px;height:0;border-top-width:3px;flex:none}
+.zsw-cerc{border-top:3px solid var(--red)}
+.zsw-iso{border-top:3px dashed #1F6F4A}
+.zfine{margin-top:auto;padding-top:12px;font-size:13px;line-height:1.62;color:var(--muted)}
+.zfine p{margin:0 0 9px}
+.zfine strong{color:var(--brown)}
+.zlink{color:var(--red);font-weight:700;text-decoration:none}
+.zlink:hover{text-decoration:underline}
+.zpin{display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;
+  background:var(--red);border:3px solid #FFFFFF;box-shadow:0 3px 10px rgba(0,0,0,.34);
+  color:#FFFFFF;font-family:var(--disp);font-weight:700;font-size:17px;line-height:1}
+
+/* ---- the menu category grid (their #menu layout: 3-up, 300x200 thumb, big caps title) ---- */
+.catgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:54px 28px;max-width:1200px;margin:0 auto}
+@media(max-width:1000px){.catgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:44px 24px}}
+@media(max-width:620px){.catgrid{grid-template-columns:1fr}}
+.catcard{display:flex;flex-direction:column;align-items:center;text-align:center;cursor:pointer}
+/* pătrată, ca fișierele generate — cover nu mai taie nimic din farfurie */
+.catthumb{width:100%;max-width:300px;aspect-ratio:1/1;position:relative;overflow:hidden}
+.catphoto{position:absolute;inset:0;background-size:cover;background-position:center}
+/* slotul nu trebuie să fure click-ul cardului (image-slot gol deschide file picker) */
+.catthumb image-slot,.prodthumb image-slot{pointer-events:none}
+/* rânduri de înălțime fixă, ca toate cardurile din grilă să se alinieze */
+.cattext{display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:16px;width:100%}
+.catpill{height:21px;display:flex;align-items:center;justify-content:center}
+.catname{display:flex;align-items:center;justify-content:center;text-align:center;min-height:2em;
+  font-family:var(--disp);font-weight:700;text-transform:uppercase;line-height:1;letter-spacing:.005em;
+  font-size:clamp(28px,3.1vw,40px);color:var(--brown);transition:color .15s}
+.catcard:hover .catname{color:var(--red)}
+.catcard:hover .catthumb{transform:scale(1.03)}
+.catthumb{transition:transform .25s}
+/* aceeași înaintare la hover ca la categorii */
+.prodthumb{transition:transform .25s}
+.prodname{transition:color .15s}
+.prodcard:hover .prodthumb{transform:scale(1.03)}
+.prodcard:hover .prodname{color:var(--red)}
+
+/* ---- product grid ---- */
+.prodgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:40px 28px}
+/* cardul se întinde pe toată înălțimea rândului, iar preț+buton sunt împinse la bază,
+   ca să fie pe aceeași linie indiferent câte rânduri au titlul și descrierea */
+.prodcard{display:flex;flex-direction:column;align-items:center;text-align:center;height:100%}
+.prodname{display:flex;align-items:center;justify-content:center;min-height:2.1em;margin-top:14px;color:var(--brown)}
+.proddesc{font-size:14px;line-height:1.5;color:var(--muted);margin-top:6px;max-width:250px}
+.prodfoot{margin-top:auto;padding-top:12px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.prodprice{display:flex;align-items:baseline;gap:10px}
+.prodthumb{width:100%;aspect-ratio:1/1;position:relative;overflow:hidden;background:#F1EDEA}
+/* card cu fotografie generată — farfuria stă întreagă, pe alb, fără chenar */
+.prodthumb.hasphoto{background:transparent}
+.prodphoto{position:absolute;inset:0;background-size:contain;background-repeat:no-repeat;background-position:center}
+
+@media(max-width:1180px){.boards{gap:48px!important}.board{width:420px!important}}
+@media(max-width:560px){.board{width:100%!important}}
+
+.chipbar{scrollbar-width:none}.chipbar::-webkit-scrollbar{display:none}
+.chip{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 16px;border-radius:4px;border:2px solid var(--line);
+  background:#FFFFFF;font-family:var(--disp);font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;
+  color:var(--brown);cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.chip:hover{border-color:var(--red);background:var(--red);color:#FFFFFF}
+
+input.f{padding:13px 14px;border-radius:4px;border:1px solid rgba(69,20,0,.28);background:#FFFFFF;color:var(--brown);
+  font-size:15px;font-family:var(--body);outline:none}
+input.f:focus{border-color:var(--brown)}
+
+@keyframes arrowNudge{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+@keyframes popIn{from{opacity:0}to{opacity:1}}
+@keyframes popInC{from{opacity:0;transform:translateX(-50%) scale(.9)}to{opacity:1;transform:translateX(-50%)}}
+@keyframes kb{from{transform:scale(1.06)}to{transform:scale(1.2) translate(-1.5%,1.5%)}}
+@keyframes slideup{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes slidein{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<div style="position:fixed;top:0;left:0;right:0;z-index:50;background:#FFFFFF;border-bottom:1px solid var(--line)">
+  <div class="hbar" style="display:flex;align-items:center;gap:34px;padding:0 44px">
+    <a href="#top" onClick="{{ closeMenu }}" style="display:flex;align-items:center;text-decoration:none;flex:none;padding:9px 0">
+      <img class="logo" src="img/logo-hash-sm.svg" alt="H'ash Bistro &amp; Take-Away" width="185" height="155">
+    </a>
+    <div class="hnav" style="display:flex;align-items:stretch;gap:clamp(16px,2.2vw,32px);flex:1 1 auto;min-width:0;overflow:hidden">
+      <span class="navlink" onClick="{{ toggleMenu }}" style="display:flex;align-items:center;gap:6px;color:{{ menuTabCol }};--uw:{{ menuTabU }}">MENIU <span style="font-size:9px;transform:{{ menuCaret }};display:inline-block;transition:transform .2s">▾</span></span>
+      <span class="navlink" onClick="{{ goMz }}">MENIUL ZILEI</span>
+      <span class="navlink" onClick="{{ goFooter }}">EVENIMENTE</span>
+      <span class="navlink" onClick="{{ goFooter }}">CONTACT</span>
+    </div>
+    <div class="hright" style="display:flex;align-items:center;gap:22px;flex:none;min-width:0">
+      <span onClick="{{ goZona }}" class="hnav" style="display:flex;align-items:center;gap:7px;font-size:15px;font-weight:700;text-transform:uppercase;color:var(--brown);cursor:pointer" style-hover="color:var(--red)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#AD2118" stroke-width="2"><path d="M12 21s-7-6.3-7-11a7 7 0 1 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg><span class="hlabel">GĂSEȘTE-NE</span>
+      </span>
+      <span class="hnav" style="display:flex;align-items:center;gap:7px;font-size:15px;font-weight:700;text-transform:uppercase;color:var(--brown);cursor:pointer" style-hover="color:var(--red)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#451400" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span class="hlabel">CONT</span>
+      </span>
+      <span onClick="{{ openCart }}" style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;flex:none;border-radius:4px;cursor:pointer" style-hover="background:rgba(69,20,0,.06)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#451400" stroke-width="2"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+        <sc-if value="{{ hasItems }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:2px;right:2px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:var(--red);color:#FFFFFF;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center">{{ cartCount }}</span></sc-if>
+      </span>
+    </div>
+  </div>
+  <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="border-top:1px solid var(--line);background:#FFFFFF;box-shadow:0 24px 44px rgba(69,20,0,.14);max-height:72vh;overflow-y:auto">
+      <div style="padding:30px 44px 36px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:30px 40px;max-width:1240px;margin:0 auto">
+        <sc-for list="{{ menuGroups }}" as="g" hint-placeholder-count="5">
+          <div>
+            <div class="d3" style="font-size:20px;color:var(--brown);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--brown)">{{ g.NAME }}</div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <sc-for list="{{ g.cats }}" as="c" hint-placeholder-count="3">
+                <span class="mlink" onClick="{{ c.go }}"><span style="flex:1;font-size:15px;font-weight:600;color:inherit">{{ c.name }}</span><span style="font-size:12px;font-weight:700;opacity:.45">{{ c.count }}</span></span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+</div>
+<div class="hspace"></div>
+<sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}"><div onClick="{{ closeMenu }}" style="position:fixed;inset:81px 0 0;z-index:39;background:rgba(69,20,0,.28)"></div></sc-if>
+
+<!-- ═══════════ HERO ═══════════ -->
+<div id="top" style="position:relative;height:660px;overflow:hidden;background:#1A0A02">
+  <video class="herovid" autoplay="autoplay" muted="muted" loop="loop" playsinline="playsinline" webkit-playsinline="true" preload="metadata" poster="video/hero-poster.jpg" aria-hidden="true">
+    <source src="video/hero.webm" type="video/webm">
+    <source src="video/hero.mp4" type="video/mp4">
+  </video>
+  <img class="heroimg" src="flyer-img/p5-10-593x395.png" alt="" style="animation:kb 22s ease-in-out infinite alternate">
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(26,10,2,.62) 0%,rgba(26,10,2,.44) 45%,rgba(26,10,2,.78) 100%)"></div>
+  <div style="position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 32px;animation:slideup .6s ease both">
+    <div style="font-size:13px;font-weight:800;letter-spacing:.24em;color:#FFFFFF;opacity:.85;text-transform:uppercase">Bragadiru · Str. Cireșar 22 · L–S 11–22 · D 12–22</div>
+    <div class="d1" style="font-size:clamp(44px,7vw,86px);color:#FFFFFF;margin-top:18px">Poftiți</div>
+    <div class="d1" style="font-size:clamp(64px,11.5vw,146px);color:#FFFFFF">La masă</div>
+    <div class="d2" style="font-size:clamp(20px,2.6vw,34px);color:#FFFFFF;margin-top:16px;letter-spacing:.03em;font-weight:500">Rețete tradiționale, livrate calde</div>
+    <div style="font-size:17px;line-height:1.55;color:rgba(255,255,255,.85);max-width:470px;margin-top:16px">Peste 70 de preparate — de la sarmale și tochitură până la pizza pe blat de 32 cm — gătite zilnic în bistroul nostru din Bragadiru.</div>
+    <div style="display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:14px;margin-top:30px">
+      <span class="btn lg" onClick="{{ goMenu }}">Comandă acum</span>
+      <span class="btn lg onDark" onClick="{{ goMz }}">Meniul zilei</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:9px;margin-top:22px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--green)"></span>
+      <span style="font-size:14px;font-weight:600;color:rgba(255,255,255,.8)">Livrăm în raza de 4 km · est. {{ estMin }} min</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ BANDĂ MENIUL ZILEI (echivalentul benzii lor de rewards) ═══════════ -->
+<div class="mzband">
+  <div class="ticker">
+    <div class="tickertrack">
+      <sc-for list="{{ ticker }}" as="t" hint-placeholder-count="7"><span class="tickitem">{{ t.txt }}</span></sc-for>
+      <sc-for list="{{ ticker }}" as="t" hint-placeholder-count="7"><span class="tickitem" aria-hidden="true">{{ t.txt }}</span></sc-for>
+    </div>
+  </div>
+  <span class="btn onDark" style="flex:none" onClick="{{ openMz }}">Comandă</span>
+</div>
+
+<!-- ═══════════ AVIZIER ═══════════ -->
+<div id="mz-band" data-screen-label="Avizier" style="padding:clamp(44px,6.4vh,100px) clamp(16px,2.6vw,44px) clamp(48px,6.8vh,108px);scroll-margin-top:100px">
+  <div style="max-width:1240px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:clamp(26px,4vh,60px)">
+      <div class="kick">Avizierul bistroului</div>
+      <div class="d2" style="font-size:clamp(36px,5.2vw,64px);color:var(--brown);margin-top:10px">Acum la H'ash</div>
+    </div>
+    <div class="slider">
+      <div class="sviewport">
+        <div class="strack" style="transform:{{ trackShift }}">
+          <sc-if value="{{ boardsReady }}" hint-placeholder-val="{{ false }}"><sc-for list="{{ boards }}" as="b" hint-placeholder-count="0">
+            <div class="sslide">
+              <div class="sbanner" role="img" aria-label="{{ b.title }}" style="background-image:url('{{ b.img }}')">
+                <sc-if value="{{ b.scrim }}" hint-placeholder-val="{{ false }}">
+                  <div class="pzscrim"></div>
+                </sc-if>
+                <div class="sinner" style="justify-content:{{ b.just }}">
+                  <div class="stext" style="text-align:{{ b.ta }};align-items:{{ b.ai }};max-width:{{ b.tw }}">
+                    <div class="shead">{{ b.head }}</div>
+                    <div class="srule"></div>
+                    <div class="ssub">{{ b.subhead }}</div>
+                  </div>
+                </div>
+                <img class="slogo" src="img/logo-hash-light.svg" alt="H'ash Bistro &amp; Take-Away" width="185" height="155">
+                <div class="sbadge"><span class="pill red" style="white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.35)">{{ b.badge }}</span></div>
+              </div>
+              <div class="scap">
+                <div class="scapL">
+                  <div class="d3" style="font-size:clamp(22px,min(2.9vw,3.6vh),34px);color:var(--brown)">{{ b.title }}</div>
+                  <div class="lede" style="font-size:clamp(13.5px,1.8vh,15.5px);max-width:640px">{{ b.sub }}</div>
+                </div>
+                <div class="scapR">
+                  <span class="btn lg" onClick="{{ b.go }}">{{ b.cta }}</span>
+                  <div class="scapmeta">{{ b.meta }}</div>
+                </div>
+              </div>
+            </div>
+          </sc-for></sc-if>
+        </div>
+      </div>
+      <span class="sarrow sprev" role="button" aria-label="Bannerul anterior" onClick="{{ prevSlide }}">‹</span>
+      <span class="sarrow snext" role="button" aria-label="Bannerul următor" onClick="{{ nextSlide }}">›</span>
+      <div class="sdots">
+        <sc-for list="{{ slideDots }}" as="dt" hint-placeholder-count="0">
+          <span class="sdot" role="button" aria-label="{{ dt.label }}" style="background:{{ dt.bg }}" onClick="{{ dt.go }}"></span>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MENIU: categorii ⇄ preparatele categoriei ═══════════ -->
+<div id="menu" style="padding:76px 44px 96px;scroll-margin-top:96px">
+  <div style="max-width:1200px;margin:0 auto">
+
+    <sc-if value="{{ showCats }}" hint-placeholder-val="{{ true }}">
+      <div style="text-align:center;margin-bottom:54px">
+        <div class="kick">Meniul H'ash</div>
+        <div class="d2" style="font-size:clamp(32px,4.4vw,52px);color:var(--brown);margin-top:10px">Alege ce poftești</div>
+        <div class="lede" style="max-width:540px;margin:14px auto 0">Peste 70 de preparate, gătite zilnic în bucătăria noastră. Apasă pe o categorie ca să vezi preparatele.</div>
+      </div>
+      <div class="catgrid">
+        <sc-for list="{{ catCards }}" as="c" hint-placeholder-count="9">
+          <div class="catcard" onClick="{{ c.go }}">
+            <div class="catthumb">
+              <sc-if value="{{ c.hasImg }}" hint-placeholder-val="{{ true }}"><div class="catphoto" role="img" aria-label="{{ c.name }}" style="background-image:url('{{ c.img }}')"></div></sc-if>
+              <sc-if value="{{ c.noImg }}" hint-placeholder-val="{{ false }}"><image-slot id="slot-cat-{{ c.id }}" shape="rounded" radius="0" placeholder="Foto — {{ c.name }}"></image-slot></sc-if>
+            </div>
+            <div class="cattext">
+              <div class="catpill"><sc-if value="{{ c.hasTag }}" hint-placeholder-val="{{ false }}"><span class="pill">{{ c.tag }}</span></sc-if></div>
+              <div class="catname">{{ c.NAME }}</div>
+              <div style="font-size:14px;color:var(--brown)">{{ c.sub }}</div>
+              <sc-if value="{{ c.hasPrice }}" hint-placeholder-val="{{ true }}"><div class="d3" style="font-size:22px;color:var(--gold)">{{ c.priceTxt }}</div></sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showProducts }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px">
+        <span class="btn ghost sm" onClick="{{ backToCats }}">← Toate categoriile</span>
+        <span style="font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:rgba(69,20,0,.45)">{{ activeCountTxt }}</span>
+      </div>
+      <div style="padding-bottom:14px;border-bottom:3px solid var(--brown)">
+        <span class="d2" style="font-size:clamp(32px,4.8vw,58px);color:var(--brown)">{{ activeNAME }}</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:24px">
+        <sc-for list="{{ catChips }}" as="c" hint-placeholder-count="6">
+          <span class="chip" style="border-color:{{ c.bord }};background:{{ c.bg }};color:{{ c.col }}" onClick="{{ c.go }}">{{ c.name }}</span>
+        </sc-for>
+      </div>
+      <sc-if value="{{ activeNote }}" hint-placeholder-val="{{ false }}"><div class="lede" style="font-size:15px;margin-top:22px">{{ activeNote }}</div></sc-if>
+      <div class="prodgrid" style="margin-top:32px">
+        <sc-for list="{{ activeProducts }}" as="p" hint-placeholder-count="6">
+          <div class="prodcard">
+            <div class="prodthumb {{ p.thumbCls }}">
+              <sc-if value="{{ p.hasImg }}" hint-placeholder-val="{{ false }}"><div class="prodphoto" role="img" aria-label="{{ p.name }}" style="background-image:url('{{ p.img }}')"></div></sc-if>
+              <sc-if value="{{ p.noImg }}" hint-placeholder-val="{{ true }}"><image-slot id="slot-{{ p.id }}" shape="rounded" radius="0" placeholder="Foto — {{ p.name }}"></image-slot></sc-if>
+              <sc-if value="{{ p.badge }}" hint-placeholder-val="{{ false }}"><span class="pill red" style="position:absolute;top:10px;left:10px;animation:popIn .3s ease both">{{ p.badge }}</span></sc-if>
+            </div>
+            <div class="d3 prodname" style="font-size:23px">{{ p.name }}</div>
+            <div class="proddesc">{{ p.desc }}</div>
+            <div class="prodfoot">
+              <div class="prodprice">
+                <span class="d3" style="font-size:22px;color:var(--gold)">{{ p.priceTxt }}</span>
+                <span style="font-size:13px;color:rgba(69,20,0,.45)">{{ p.w }}</span>
+              </div>
+              <div>
+                <sc-if value="{{ p.inCart }}" hint-placeholder-val="{{ false }}">
+                  <span style="display:flex;align-items:center;gap:18px;background:var(--red);border-radius:4px;height:40px;padding:0 18px;animation:popIn .22s ease both"><span onClick="{{ p.dec }}" style="color:#FFFFFF;font-weight:800;font-size:19px;cursor:pointer;line-height:1">−</span><span style="color:#FFFFFF;font-weight:800;font-size:15px;min-width:14px;text-align:center">{{ p.qty }}</span><span onClick="{{ p.inc }}" style="color:#FFFFFF;font-weight:800;font-size:19px;cursor:pointer;line-height:1">+</span></span>
+                </sc-if>
+                <sc-if value="{{ p.notInCart }}" hint-placeholder-val="{{ true }}">
+                  <span class="btn" onClick="{{ p.add }}">Adaugă <span style="animation:arrowNudge 1.4s ease-in-out infinite;margin-left:6px">→</span></span>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="text-align:center;margin-top:60px"><span class="btn ghost" onClick="{{ backToCats }}">← Toate categoriile</span></div>
+    </sc-if>
+
+  </div>
+</div>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<div id="footer" style="background:#FFFFFF;color:var(--brown);scroll-margin-top:100px">
+  <div style="padding:76px clamp(16px,2.6vw,44px) 0">
+    <div style="max-width:1240px;margin:0 auto">
+
+      <div class="footgrid">
+        <div style="display:flex;flex-direction:column;gap:13px">
+          <span class="flink-lg" onClick="{{ goMenu }}">Meniu</span>
+          <span class="flink-lg" onClick="{{ goMz }}">Meniul zilei</span>
+          <span class="flink-lg" onClick="{{ openMz }}">Comandă online</span>
+          <span class="flink-lg" onClick="{{ goMz }}">Evenimente</span>
+          <span class="flink-lg" onClick="{{ goZona }}">Găsește-ne</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <span class="flink" style="cursor:default">Str. Cireșar 22, Bragadiru, Ilfov</span>
+          <a class="flink" href="tel:+40722305909">0722 305 909</a>
+          <span class="flink" style="cursor:default">Luni – Sâmbătă: 11:00 – 22:00</span>
+          <span class="flink" style="cursor:default">Duminică: 12:00 – 22:00</span>
+          <span class="flink" style="cursor:default">Livrare în raza de 4 km</span>
+          <span class="flink">Comandă pe Glovo</span>
+          <span class="flink">Mese festive — până în 70 de persoane</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px">
+          <span style="width:74px;height:74px;border-radius:50%;background:var(--red);display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:10px">
+            <span class="d2" style="font-size:30px;color:#FFFFFF;line-height:1">H</span>
+            <span style="font-size:6.5px;font-weight:800;letter-spacing:.24em;color:rgba(255,255,255,.85);margin-top:1px">GĂTIT AZI</span>
+          </span>
+          <div class="kick">Meniul zilei</div>
+          <div class="d2" style="font-size:clamp(30px,3.4vw,42px);color:var(--brown)">Poftiți la masă</div>
+          <div style="font-size:15px;color:var(--muted);max-width:280px">Ciorbă + fel principal, gătite azi. 35 lei pachet · 40 lei în restaurant.</div>
+          <span class="btn ghost" style="margin-top:14px" onClick="{{ openMz }}">Comandă acum</span>
+        </div>
+      </div>
+
+      <div id="zona" style="margin-top:54px;padding-top:44px;border-top:1px solid var(--line);scroll-margin-top:100px">
+        <div class="zonahead">
+          <div>
+            <div class="kick">Găsește-ne</div>
+            <div class="d3" style="font-size:clamp(23px,2.9vw,34px);color:var(--brown);margin-top:6px">Zona de livrare</div>
+          </div>
+          <div class="lede" style="font-size:14px;max-width:520px">
+            Livrăm pe o rază de 4 km din Str. Cireșar 22. În afara zonei, ne găsești pe Glovo.
+          </div>
+        </div>
+        <div class="zonagrid">
+          <div id="harta" role="application" aria-label="Harta zonei de livrare, rază de 4 km"></div>
+          <div class="zonalist">
+            <div class="fhead">Cartiere și localități acoperite</div>
+            <div class="zchips" id="zchips"></div>
+            <div class="zleg">
+              <span class="zlegi"><i class="zsw zsw-cerc"></i>Zona de livrare — 4 km</span>
+              <span class="zlegi"><i class="zsw zsw-iso"></i>Cât ajungem în 15 minute</span>
+            </div>
+            <div class="zfine">
+              <p><strong>395 de străzi</strong> cu nume intră în rază, în <strong>Bragadiru</strong>, <strong>Domnești</strong>, <strong>Clinceni</strong>, <strong>Măgurele</strong>, <strong>Chiajna</strong> și în <strong>Sectoarele 5 și 6</strong> din București.</p>
+              <p>Cercul e distanță în linie dreaptă; linia verde e drumul real. Spre vest ajungem mai departe decât cercul, spre est mai puțin — Centura se ocolește.</p>
+              <p>Nu ești sigur dacă intri? Sună la <a class="zlink" href="tel:+40722305909">0722 305 909</a> și îți spunem pe loc.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footgrid" style="margin-top:58px">
+        <div>
+          <div class="fhead">Comandă rapid</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a class="btn sm" href="tel:+40722305909" style="text-decoration:none">Sună acum</a>
+            <span class="btn ghost sm">Glovo</span>
+          </div>
+        </div>
+        <div>
+          <div class="fhead">Urmărește-ne</div>
+          <div style="display:flex;gap:10px">
+            <span class="soc" aria-label="Facebook"><svg width="17" height="17" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1V7.9c0-.9.25-1.5 1.5-1.5h1.7V3.6c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.1H7.3V13h2.7v8h3.5z"/></svg></span>
+            <span class="soc" aria-label="Instagram"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="3.8"/><circle cx="17.2" cy="6.8" r="1.1" fill="#FFFFFF" stroke="none"/></svg></span>
+            <span class="soc" aria-label="TikTok"><svg width="17" height="17" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M14 3h2.6c.2 1.9 1.4 3.3 3.4 3.5v2.6c-1.3 0-2.5-.4-3.4-1.1v5.9c0 3.1-2.3 5.1-5.1 5.1S6.4 17 6.4 13.9s2.3-5.1 5.1-5.1c.3 0 .6 0 .9.1v2.7c-.3-.1-.6-.2-.9-.2-1.4 0-2.5 1.1-2.5 2.5s1.1 2.5 2.5 2.5 2.5-1.1 2.5-2.5V3z"/></svg></span>
+          </div>
+        </div>
+        <div></div>
+      </div>
+
+      <div style="margin-top:64px;padding-top:52px;border-top:1px solid var(--line)">
+        <img class="flogo" src="img/logo-hash-md.svg" alt="H'ash Bistro &amp; Take-Away" width="185" height="155">
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:34px;padding-bottom:28px;font-size:13px;color:var(--muted);text-align:center">
+        <span>© 2026 H'ash Bistro &amp; Take-Away</span>
+        <span style="color:rgba(69,20,0,.35)">·</span>
+        <span>Prețurile includ TVA · Gramajele sunt în stare crudă</span>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="legal">
+    <div class="legal-row">
+      <a href="#">Termeni și condiții</a>
+      <a href="#">Politica de confidențialitate</a>
+      <a href="#">Politica de cookies</a>
+      <a href="https://anpc.ro/" target="_blank" rel="noopener noreferrer">ANPC</a>
+      <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer">SOL — Soluționarea online a litigiilor</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ BARĂ FIXĂ MOBIL + WHATSAPP ═══════════ -->
+<div class="mobar">
+  <a class="mobar-btn call" href="tel:+40722305909">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"><path d="M6.5 3h3l1.5 4-2 1.5a12 12 0 0 0 6.5 6.5L17 13l4 1.5v3a2 2 0 0 1-2.2 2A17 17 0 0 1 4 5.2 2 2 0 0 1 6 3z"/></svg>
+    Sună
+  </a>
+  <a class="mobar-btn nav" href="https://waze.com/ul?q=Str.%20Cire%C8%99ar%2022%2C%20Bragadiru%2C%20Ilfov&amp;navigate=yes" target="_blank" rel="noopener noreferrer">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"><path d="M12 21s-7-6.3-7-11a7 7 0 1 1 14 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+    Cum ajungi
+  </a>
+</div>
+<a class="wa" href="https://wa.me/40722305909" target="_blank" rel="noopener noreferrer" aria-label="Scrie-ne pe WhatsApp">
+  <svg width="27" height="27" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M12.04 2C6.6 2 2.2 6.4 2.2 11.84c0 1.74.46 3.44 1.32 4.94L2.1 22l5.34-1.4a9.8 9.8 0 0 0 4.6 1.17h.01c5.43 0 9.84-4.4 9.84-9.84S17.47 2 12.04 2zm0 17.98h-.01a8.2 8.2 0 0 1-4.15-1.13l-.3-.18-3.09.81.83-3.01-.2-.31a8.16 8.16 0 0 1-1.25-4.32c0-4.51 3.67-8.18 8.18-8.18 2.19 0 4.24.85 5.79 2.4a8.13 8.13 0 0 1 2.39 5.79c0 4.51-3.67 8.13-8.19 8.13zm4.49-6.09c-.25-.12-1.46-.72-1.68-.8-.23-.09-.39-.13-.55.12s-.64.8-.78.97c-.14.16-.29.18-.53.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.23-1.46-1.37-1.71-.14-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.12-.15.16-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.55-1.34-.76-1.83-.2-.48-.4-.42-.55-.42l-.47-.01c-.16 0-.43.06-.65.31-.22.25-.85.83-.85 2.03s.87 2.35.99 2.51c.12.16 1.71 2.61 4.15 3.66.58.25 1.03.4 1.38.51.58.19 1.11.16 1.53.1.47-.07 1.46-.6 1.66-1.17.21-.58.21-1.07.14-1.17-.06-.11-.22-.17-.47-.29z"/></svg>
+</a>
+
+<!-- ═══════════ COȘ ═══════════ -->
+<sc-if value="{{ cartOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:88;background:rgba(69,20,0,.4)" onClick="{{ closeCart }}"></div>
+  <div style="position:fixed;top:0;right:0;bottom:0;z-index:89;width:440px;max-width:92vw;background:#FFFFFF;box-shadow:-30px 0 80px rgba(69,20,0,.2);display:flex;flex-direction:column;animation:slidein .3s ease both">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 26px;border-bottom:1px solid var(--line)">
+      <div>
+        <div class="d2" style="font-size:28px;color:var(--brown)">Coșul tău</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px">{{ cartCount }} produse</div>
+      </div>
+      <span onClick="{{ closeCart }}" style="width:36px;height:36px;border-radius:4px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--brown);cursor:pointer;font-size:15px" style-hover="border-color:var(--red);color:var(--red)">✕</span>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:14px 26px">
+      <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="text-align:center;padding:60px 20px">
+          <div class="d2" style="font-size:30px;color:rgba(69,20,0,.35)">Gol deocamdată</div>
+          <div style="font-size:14px;margin-top:8px;line-height:1.6;color:var(--muted)">Adaugă preparate din meniu și le vezi aici.</div>
+          <div style="margin-top:20px"><span class="btn" onClick="{{ closeCart }}">Vezi meniul</span></div>
+        </div>
+      </sc-if>
+      <sc-for list="{{ cartLines }}" as="l" hint-placeholder-count="0">
+        <div style="display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)">
+          <div style="flex:1;min-width:0">
+            <div class="d3" style="font-size:19px;color:var(--brown)">{{ l.name }}</div>
+            <sc-if value="{{ l.extra }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4">{{ l.extra }}</div></sc-if>
+            <div style="display:flex;align-items:center;gap:14px;margin-top:10px">
+              <span style="display:flex;align-items:center;gap:14px;border:2px solid var(--line);border-radius:4px;height:34px;padding:0 12px"><span onClick="{{ l.dec }}" style="color:var(--red);font-weight:800;font-size:16px;cursor:pointer;line-height:1">−</span><span style="font-weight:800;font-size:14px;min-width:12px;text-align:center;color:var(--brown)">{{ l.qty }}</span><span onClick="{{ l.inc }}" style="color:var(--red);font-weight:800;font-size:16px;cursor:pointer;line-height:1">+</span></span>
+              <span onClick="{{ l.rm }}" style="font-size:12px;font-weight:700;color:rgba(69,20,0,.45);cursor:pointer;text-transform:uppercase;letter-spacing:.06em" style-hover="color:var(--red)">Șterge</span>
+            </div>
+          </div>
+          <div class="d3" style="font-size:20px;color:var(--gold);white-space:nowrap">{{ l.sum }} lei</div>
+        </div>
+      </sc-for>
+    </div>
+    <sc-if value="{{ hasItems }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:20px 26px;border-top:1px solid var(--line)">
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:var(--muted)"><span>Subtotal</span><span>{{ subTxt }}</span></div>
+        <div style="display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:var(--muted)"><span>Livrare (est.)</span><span>{{ feeTxt }}</span></div>
+        <div class="d2" style="display:flex;justify-content:space-between;font-size:30px;color:var(--brown);padding:10px 0 2px"><span>Total</span><span>{{ totalBigTxt }}</span></div>
+        <div style="font-size:12px;color:rgba(69,20,0,.45);margin:2px 0 14px">Livrăm în raza de 4 km · est. {{ estMin }} min</div>
+        <span class="btn wide lg" onClick="{{ goCheckout }}">Finalizează comanda</span>
+      </div>
+    </sc-if>
+  </div>
+</sc-if>
+
+<!-- ═══════════ SHEET OPȚIUNI ═══════════ -->
+<sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:90;background:rgba(69,20,0,.4)" onClick="{{ closeSheet }}"></div>
+  <div style="position:fixed;top:0;right:0;bottom:0;z-index:91;width:440px;max-width:92vw;background:#FFFFFF;box-shadow:-30px 0 80px rgba(69,20,0,.16);display:flex;flex-direction:column;animation:slidein .3s ease both">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 26px;border-bottom:1px solid var(--line)">
+      <div><div class="d2" style="font-size:26px;color:var(--brown)">{{ sheetTitle }}</div><div style="font-size:13px;color:var(--muted);margin-top:3px">{{ sheetSub }}</div></div>
+      <span onClick="{{ closeSheet }}" style="width:36px;height:36px;border-radius:4px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--brown);cursor:pointer;font-size:15px" style-hover="border-color:var(--red);color:var(--red)">✕</span>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px 26px">
+      <sc-for list="{{ sheetGroups }}" as="g" hint-placeholder-count="2">
+        <div style="margin-bottom:24px">
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px"><span class="kick">{{ g.label }}</span><span style="font-size:12px;color:rgba(69,20,0,.45)">{{ g.hint }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ g.options }}" as="o" hint-placeholder-count="3">
+              <div onClick="{{ o.pick }}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:4px;border:2px solid {{ o.bord }};background:{{ o.bg }};cursor:pointer" style-hover="border-color:var(--red)">
+                <span style="width:16px;height:16px;flex:none;border-radius:{{ o.rad }};border:2px solid {{ o.dotBord }};background:{{ o.dot }}"></span>
+                <span style="flex:1;font-size:15px;color:var(--brown)">{{ o.name }}</span>
+                <sc-if value="{{ o.priceTxt }}" hint-placeholder-val="{{ false }}"><span style="font-size:14px;font-weight:800;color:var(--gold)">{{ o.priceTxt }}</span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="padding:20px 26px;border-top:1px solid var(--line)">
+      <span class="btn wide lg" onClick="{{ sheetConfirm }}">Adaugă în coș — {{ sheetTotalTxt }}</span>
+    </div>
+  </div>
+</sc-if>
+
+<!-- ═══════════ CHECKOUT ═══════════ -->
+<sc-if value="{{ checkoutOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:fixed;inset:0;z-index:100;background:rgba(69,20,0,.45);overflow-y:auto" onClick="{{ closeCheckout }}">
+    <div onClick="{{ eatClick }}" style="max-width:920px;margin:48px auto;background:#FFFFFF;border-radius:6px;box-shadow:0 40px 120px rgba(69,20,0,.3);overflow:hidden;animation:slideup .35s ease both">
+      <sc-if value="{{ notConfirmed }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 34px;border-bottom:1px solid var(--line)">
+        <div class="d2" style="font-size:32px;color:var(--brown)">Finalizează comanda</div>
+        <span onClick="{{ closeCheckout }}" style="width:36px;height:36px;border-radius:4px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--brown);cursor:pointer" style-hover="border-color:var(--red);color:var(--red)">✕</span>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:0">
+        <div style="padding:28px 34px;border-right:1px solid var(--line)">
+          <div class="kick" style="margin-bottom:12px">1 · Cum primești comanda</div>
+          <div style="display:flex;gap:10px;margin-bottom:24px">
+            <span onClick="{{ setLivrare }}" style="flex:1;text-align:center;padding:13px;border-radius:4px;border:2px solid {{ livBord }};background:{{ livBg }};color:{{ livCol }};font-size:15px;font-weight:700;cursor:pointer">Livrare la adresă</span>
+            <span onClick="{{ setRidicare }}" style="flex:1;text-align:center;padding:13px;border-radius:4px;border:2px solid {{ ridBord }};background:{{ ridBg }};color:{{ ridCol }};font-size:15px;font-weight:700;cursor:pointer">Ridicare din bistro</span>
+          </div>
+          <sc-if value="{{ isLivrare }}" hint-placeholder-val="{{ true }}">
+            <div class="kick" style="margin-bottom:12px">2 · Adresa de livrare</div>
+            <div style="display:flex;gap:10px">
+              <input class="f" value="{{ addr }}" onChange="{{ onAddr }}" placeholder="Ex: Str. Diamantului 5, Bragadiru" style="flex:1">
+              <span class="btn ghost" onClick="{{ checkAddr }}">Verifică</span>
+            </div>
+            <sc-if value="{{ zoneIn }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding:12px 16px;border-radius:4px;background:rgba(144,160,53,.12);border:1px solid var(--green)"><span style="color:var(--green);font-weight:800">✓</span><span style="font-size:14px;color:var(--brown)">Ești în raza de livrare ({{ distTxt }}) — poți continua comanda.</span></div>
+            </sc-if>
+            <sc-if value="{{ zoneOut }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:12px;padding:14px 16px;border-radius:4px;background:rgba(173,33,24,.08);border:2px solid var(--red)">
+                <div style="display:flex;align-items:center;gap:10px"><span style="color:var(--red);font-weight:800;font-size:15px">✕</span><span style="font-size:14px;font-weight:700;color:var(--red)">Adresa este în afara zonei de livrare de 4 km ({{ distTxt }}).</span></div>
+                <div style="font-size:13px;color:var(--muted);margin:8px 0 12px;line-height:1.5">Nu putem livra direct la această adresă, dar ne găsești pe platformele partenere — sau poți ridica personal comanda din bistro.</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap"><span class="btn sm">Comandă pe Glovo</span><span class="btn ghost sm" onClick="{{ setRidicare }}">Ridic eu comanda</span></div>
+              </div>
+            </sc-if>
+            <div style="font-size:11px;color:rgba(69,20,0,.4);margin-top:8px">demo: adresele care conțin „Bragadiru” sunt considerate în rază</div>
+          </sc-if>
+          <sc-if value="{{ isRidicare }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:4px;background:rgba(69,20,0,.06);border:1px solid var(--line)"><span style="font-size:14px;color:var(--brown)">Ridici comanda din Str. Cireșar 22, Bragadiru — gata în ~{{ prepMin }} min.</span></div>
+          </sc-if>
+          <div class="kick" style="margin:24px 0 12px">3 · Datele tale</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <input class="f" value="{{ custName }}" onChange="{{ onName }}" placeholder="Nume și prenume *">
+            <input class="f" value="{{ custPhone }}" onChange="{{ onPhone }}" placeholder="Telefon *">
+            <input class="f" value="{{ custEmail }}" onChange="{{ onEmail }}" placeholder="Email (opțional)">
+            <input class="f" value="{{ custNotes }}" onChange="{{ onNotes }}" placeholder="Mențiuni (interfon, etaj…)">
+          </div>
+          <div style="font-size:13px;color:var(--muted);margin-top:10px">Poți comanda fără cont — îți păstrăm istoricul după numărul de telefon. <span style="color:var(--red);font-weight:700;cursor:pointer">Ai cont? Intră aici</span></div>
+          <div class="kick" style="margin:24px 0 12px">4 · Metoda de plată</div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <sc-for list="{{ payOptions }}" as="pm" hint-placeholder-count="3">
+              <div onClick="{{ pm.pick }}" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:4px;border:2px solid {{ pm.bord }};background:{{ pm.bg }};cursor:pointer" style-hover="border-color:var(--red)">
+                <span style="width:16px;height:16px;border-radius:50%;border:2px solid {{ pm.dotBord }};background:{{ pm.dot }}"></span>
+                <span style="flex:1;font-size:15px;color:var(--brown)">{{ pm.name }}</span>
+                <span style="font-size:11px;font-weight:800;letter-spacing:.14em;color:rgba(69,20,0,.4)">{{ pm.tag }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="padding:28px 30px;background:rgba(69,20,0,.04)">
+          <div class="kick" style="margin-bottom:14px">Rezumatul comenzii</div>
+          <sc-for list="{{ cartLines }}" as="l" hint-placeholder-count="2">
+            <div style="display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:5px 0;color:var(--brown)"><span>{{ l.qty }}× {{ l.name }}</span><span style="font-weight:800;color:var(--gold)">{{ l.sum }}</span></div>
+          </sc-for>
+          <div style="border-top:1px solid var(--line);margin:12px 0"></div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:var(--muted)"><span>Subtotal</span><span>{{ subTxt }}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:14px;padding:3px 0;color:var(--muted)"><span>Livrare</span><span>{{ feeTxt }}</span></div>
+          <div class="d2" style="display:flex;justify-content:space-between;font-size:30px;color:var(--brown);padding:10px 0 4px"><span>Total</span><span>{{ totalBigTxt }}</span></div>
+          <div style="margin-top:16px"><span class="btn wide lg" style="background:{{ placeBg }};color:{{ placeCol }}" onClick="{{ placeOrder }}">{{ placeLabel }}</span></div>
+          <sc-if value="{{ placeHint }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--red);text-align:center;margin-top:10px">{{ placeHint }}</div></sc-if>
+          <div style="font-size:11.5px;color:rgba(69,20,0,.45);line-height:1.6;margin-top:14px;text-align:center">Plata online cu cardul se procesează securizat.<br>Primești confirmarea pe SMS.</div>
+        </div>
+      </div>
+      </sc-if>
+      <sc-if value="{{ confirmed }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:64px 48px;text-align:center">
+          <div style="width:74px;height:74px;margin:0 auto;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:34px;color:#FFFFFF">✓</div>
+          <div class="d2" style="font-size:48px;color:var(--brown);margin-top:22px">Mulțumim!</div>
+          <div class="d3" style="font-size:22px;color:var(--muted);margin-top:6px">Comanda {{ orderNo }} a fost primită</div>
+          <div style="font-size:15px;color:var(--muted);margin-top:14px;line-height:1.7;max-width:440px;margin-left:auto;margin-right:auto">{{ confirmMsg }}<br>Te anunțăm prin SMS la {{ custPhone }} când comanda pornește spre tine.</div>
+          <div style="margin-top:28px"><span class="btn lg" onClick="{{ resetOrder }}">Înapoi la meniu</span></div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showEvent&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Avizier (admin)&quot;}, &quot;showDaily&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Avizier (admin)&quot;}, &quot;deliveryFee&quot;: {&quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 10, &quot;tsType&quot;: &quot;number&quot;, &quot;min&quot;: 0, &quot;max&quot;: 30, &quot;unit&quot;: &quot;lei&quot;, &quot;section&quot;: &quot;Livrare&quot;}, &quot;estMinutes&quot;: {&quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 60, &quot;tsType&quot;: &quot;number&quot;, &quot;min&quot;: 20, &quot;max&quot;: 120, &quot;unit&quot;: &quot;min&quot;, &quot;section&quot;: &quot;Livrare&quot;}}">
+class Component extends DCLogic {
+  state = { cart: [], sheet: null, sel: null, activeCat: null, menuOpen: false, cartOpen: false, checkoutOpen: false, mode: "livrare", addr: "", zone: null, dist: 0, pay: "card_online", custName: "", custPhone: "", custEmail: "", custNotes: "", confirmed: false, orderNo: "", tick: 0, slide: 0 };
+
+  // ---- avizier: slider ----
+  // Auto-avans la 7s. Se oprește definitiv la prima atingere a săgeților sau
+  // bulinelor, ca să nu-i fugă bannerul de sub deget cât citește.
+  componentDidMount() { this.startSlideshow(); this.waitForMap(); }
+  componentWillUnmount() { clearInterval(this.__slideTimer); clearInterval(this.__mapTimer); }
+
+  // ---- harta zonei de livrare ----
+  // Coordonatele bistroului: Str. Cireșar 22 nu e trecut cu numărul în OpenStreetMap,
+  // așa că e interpolat între nr. 15 și nr. 39F, care sunt. Marjă estimată ±50 m.
+  // Localitățile și cele 395 de străzi din rază au fost extrase din OSM prin Overpass.
+  waitForMap() {
+    clearInterval(this.__mapTimer);
+    let tries = 0;
+    this.__mapTimer = setInterval(() => {
+      if (++tries > 40) return clearInterval(this.__mapTimer);
+      if (window.L && document.getElementById("harta")) {
+        clearInterval(this.__mapTimer);
+        try { this.initMap(); } catch (e) { console.error("harta:", e); }
+      }
+    }, 150);
+  }
+  initMap() {
+    const el = document.getElementById("harta");
+    if (!el || el.dataset.gata) return;
+    el.dataset.gata = "1";
+    const BISTRO = [44.40316, 25.98363], RAZA = 4000;
+    const zone = [
+      { n: "Cartierul Latin", km: 0.90, ll: [44.40354, 25.99497] },
+      { n: "Olteni",          km: 2.31, ll: [44.40267, 25.95462] },
+      { n: "Mihai Eminescu",  km: 2.65, ll: [44.38016, 25.99250] },
+      { n: "Brâncuși",        km: 2.70, ll: [44.42053, 26.00730] },
+      { n: "Independenței",   km: 3.00, ll: [44.38481, 26.01126] },
+      { n: "Ghencea",         km: 3.02, ll: [44.41051, 26.02019] },
+      { n: "Bragadiru centru",km: 3.31, ll: [44.37351, 25.98049] },
+      { n: "Frigocom",        km: 3.70, ll: [44.42585, 26.01774] },
+      { n: "Cartierul Verde", km: 3.77, ll: [44.38728, 26.02551] }
+    ];
+
+    const map = L.map(el, { scrollWheelZoom: false, zoomControl: true }).setView(BISTRO, 13);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18, attribution: "&copy; OpenStreetMap"
+    }).addTo(map);
+
+    const cerc = L.circle(BISTRO, {
+      radius: RAZA, color: "#AD2118", weight: 2, opacity: .85,
+      fillColor: "#AD2118", fillOpacity: .09
+    }).addTo(map);
+
+    // Conturul real de 15 minute de condus, calculat cu Valhalla peste datele OSM.
+    // Cercul e regula de livrare; ăsta e adevărul despre cât durează drumul.
+    // 30% din cerc cade în afara lui, iar 11 km² din el cad în afara cercului.
+    const ISO15 = [[44.45408,25.96163],[44.45316,25.95963],[44.45076,25.96123],[44.44968,25.96415],[44.44241,25.96438],[44.4423,25.96277],[44.44907,25.95763],[44.4472,25.95563],[44.44165,25.95314],[44.44116,25.95143],[44.44006,25.95163],[44.44078,25.952],[44.43998,25.95445],[44.43834,25.95444],[44.43796,25.95243],[44.43874,25.95163],[44.43716,25.94973],[44.43516,25.95603],[44.43102,25.95377],[44.42801,25.95448],[44.42716,25.95613],[44.42516,25.95608],[44.42116,25.95359],[44.42211,25.95468],[44.42116,25.958],[44.41716,25.95794],[44.41652,25.95627],[44.41494,25.95585],[44.41758,25.95163],[44.41578,25.95101],[44.41607,25.94563],[44.41302,25.94349],[44.41451,25.93763],[44.41411,25.93563],[44.41635,25.93363],[44.41393,25.92363],[44.41569,25.92163],[44.41374,25.91963],[44.41229,25.91363],[44.41145,25.91333],[44.41113,25.90963],[44.40716,25.90431],[44.40516,25.90474],[44.40386,25.89963],[44.40736,25.89783],[44.40793,25.8964],[44.40737,25.89363],[44.40832,25.88763],[44.40716,25.88306],[44.40635,25.88963],[44.40422,25.89163],[44.40404,25.89563],[44.40235,25.89682],[44.40116,25.90049],[44.39854,25.90025],[44.39716,25.89706],[44.39256,25.89623],[44.39116,25.89324],[44.38932,25.89363],[44.39076,25.89403],[44.39048,25.89763],[44.39202,25.89877],[44.39623,25.90656],[44.39757,25.90722],[44.39836,25.90963],[44.39763,25.91363],[44.39604,25.91451],[44.39545,25.91793],[44.39021,25.92269],[44.38958,25.92605],[44.38428,25.92675],[44.38356,25.93003],[44.3808,25.93163],[44.37991,25.93438],[44.37815,25.93563],[44.37657,25.94504],[44.3751,25.94569],[44.37716,25.94607],[44.37916,25.94484],[44.38068,25.94115],[44.38758,25.94121],[44.38748,25.94795],[44.38516,25.94999],[44.38316,25.94929],[44.38248,25.95163],[44.38572,25.95507],[44.38526,25.95763],[44.38617,25.95862],[44.39316,25.96071],[44.39547,25.96332],[44.39552,25.96599],[44.39135,25.96963],[44.39267,25.97363],[44.39186,25.97563],[44.39009,25.97763],[44.38876,25.97763],[44.38867,25.97363],[44.38658,25.97163],[44.38599,25.9668],[44.38428,25.96563],[44.38316,25.95901],[44.38235,25.96082],[44.37936,25.96163],[44.38198,25.96281],[44.38241,25.96838],[44.38346,25.96963],[44.38058,25.97305],[44.38034,25.97563],[44.3856,25.97563],[44.38414,25.98261],[44.37716,25.98082],[44.37339,25.9754],[44.36716,25.97246],[44.367,25.97363],[44.36868,25.97411],[44.36885,25.97563],[44.37033,25.97646],[44.37441,25.98438],[44.37928,25.98963],[44.37653,25.993],[44.37619,25.99563],[44.37759,25.99806],[44.37449,26.00296],[44.3741,26.00657],[44.37283,26.00796],[44.37716,26.00817],[44.37872,26.01207],[44.38451,26.02028],[44.38468,26.02411],[44.38719,26.02559],[44.38916,26.02995],[44.39116,26.03178],[44.39516,26.03187],[44.39373,26.02706],[44.394,26.02447],[44.39873,26.0212],[44.40154,26.02125],[44.40474,26.02805],[44.40881,26.03163],[44.40642,26.03363],[44.40776,26.03503],[44.40837,26.03842],[44.41138,26.03941],[44.41299,26.04563],[44.41516,26.05008],[44.41955,26.04163],[44.41822,26.03763],[44.41916,26.03673],[44.42316,26.03782],[44.42456,26.03363],[44.42353,26.03163],[44.42716,26.02647],[44.42828,26.01875],[44.43033,26.01845],[44.43189,26.01963],[44.43296,26.01743],[44.4374,26.01363],[44.43647,26.01032],[44.43537,26.00963],[44.43658,26.00905],[44.43646,26.00563],[44.43537,26.00363],[44.43416,25.99663],[44.43116,25.99068],[44.42889,25.9959],[44.42787,25.98892],[44.42531,25.98563],[44.42611,25.98363],[44.42282,25.98163],[44.42116,25.97542],[44.41947,25.98163],[44.42077,25.98763],[44.41984,25.99163],[44.42025,25.99363],[44.42243,25.99563],[44.42116,25.99691],[44.41835,25.99363],[44.41647,25.98763],[44.41676,25.98603],[44.41516,25.98519],[44.41316,25.98807],[44.41295,25.98563],[44.41043,25.98436],[44.41044,25.98291],[44.4118,25.98227],[44.41478,25.97763],[44.41439,25.9764],[44.41102,25.97549],[44.41274,25.97521],[44.41316,25.97341],[44.41671,25.97318],[44.41716,25.97139],[44.42116,25.97138],[44.42316,25.96937],[44.42916,25.9686],[44.43442,25.96963],[44.43407,25.97363],[44.43516,25.97601],[44.43558,25.96963],[44.43985,25.96832],[44.44116,25.96666],[44.45154,25.96601],[44.45408,25.96163]];
+    if (ISO15.length) {
+      L.polygon(ISO15, {
+        color: "#1F6F4A", weight: 2, opacity: .9, dashArray: "7 5",
+        fill: false, interactive: false
+      }).addTo(map).bringToFront();
+    }
+
+    L.marker(BISTRO, {
+      icon: L.divIcon({ className: "", html: '<div class="zpin">H</div>', iconSize: [34, 34], iconAnchor: [17, 17] })
+    }).addTo(map).bindPopup("<b>H'ash Bistro &amp; Take-Away</b><br>Str. Cireșar 22, Bragadiru");
+
+    zone.forEach(z => {
+      L.circleMarker(z.ll, { radius: 5, color: "#451400", weight: 2, fillColor: "#FFFFFF", fillOpacity: 1 })
+        .addTo(map).bindPopup("<b>" + z.n + "</b><br>" + z.km.toFixed(1).replace(".", ",") + " km de bistro");
+    });
+
+    map.fitBounds(cerc.getBounds(), { padding: [18, 18] });
+    setTimeout(() => map.invalidateSize(), 200);
+
+    const chips = document.getElementById("zchips");
+    if (chips && !chips.children.length) {
+      chips.innerHTML = zone.map(z =>
+        '<span class="zchip">' + z.n + '<span>' + z.km.toFixed(1).replace(".", ",") + ' km</span></span>').join("");
+    }
+  }
+  startSlideshow() {
+    clearInterval(this.__slideTimer);
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    this.__slideTimer = setInterval(() => this.stepSlide(1), 7000);
+  }
+  stepSlide(d) {
+    const n = this.__nSlides || 1;   // pus de renderVals, ca să nu dublez lista
+    this.setState(s => ({ slide: (s.slide + d + n) % n }));
+  }
+  showSlide(i) { clearInterval(this.__slideTimer); this.setState({ slide: i }); }
+  moveSlide(d) { clearInterval(this.__slideTimer); this.stepSlide(d); }
+
+  menu() { return window.HASH_MENU || { categories: [], products: [] }; }
+
+  scrollToId(id) {
+    const el = document.getElementById(id);
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 150, behavior: "smooth" });
+  }
+
+  addLine(p, extras, extraSum, extraLabel) {
+    const key = p.id + "|" + (extraLabel || "");
+    this.setState(s => {
+      const cart = s.cart.slice();
+      const i = cart.findIndex(l => l.key === key);
+      if (i >= 0) cart[i] = { ...cart[i], qty: cart[i].qty + 1 };
+      else cart.push({ key, id: p.id, name: p.name, price: p.price + (extraSum || 0), qty: 1, extra: extraLabel || "" });
+      return { cart };
+    });
+  }
+  bump(key, d) {
+    this.setState(s => ({ cart: s.cart.map(l => l.key === key ? { ...l, qty: l.qty + d } : l).filter(l => l.qty > 0) }));
+  }
+  rm(key) { this.setState(s => ({ cart: s.cart.filter(l => l.key !== key) })); }
+
+  openSheet(p) {
+    if (!p) return;
+    let groups;
+    if (p.id === "mz") {
+      const o = p.options;
+      groups = [
+        { id: "main", label: "FELUL PRINCIPAL", hint: "alege 1", type: "radio", options: o.main.map(n => ({ n })) },
+        { id: "side", label: "GARNITURA", hint: "alege 1", type: "radio", options: o.side.map(n => ({ n })) },
+        { id: "salad", label: "SALATA", hint: "alege 1", type: "radio", options: o.salad.map(n => ({ n })) },
+        { id: "extra", label: "EXTRA", hint: "opțional", type: "check", options: [{ n: "Ciorbă 350 ml", price: 8 }] }
+      ];
+    } else if (p.cat === "pizza") {
+      const t = this.menu().extras.pizzaToppings;
+      groups = [{ id: "top", label: "EXTRA PE PIZZA", hint: "opțional", type: "check", options: t.map(x => ({ n: x.name, price: x.price })) }];
+    } else if (p.spicyOpt) {
+      groups = [{ id: "spice", label: "CUM O VREI?", hint: "alege 1", type: "radio", options: [{ n: "Normală" }, { n: "Picantă" }] }];
+    } else { this.addLine(p); return; }
+    const sel = {};
+    groups.forEach(g => { sel[g.id] = g.type === "radio" ? [g.options[0].n] : []; });
+    this.setState({ sheet: { p, groups }, sel });
+  }
+  pick(g, o) {
+    this.setState(s => {
+      const sel = { ...s.sel };
+      if (g.type === "radio") sel[g.id] = [o.n];
+      else sel[g.id] = sel[g.id].includes(o.n) ? sel[g.id].filter(x => x !== o.n) : sel[g.id].concat(o.n);
+      return { sel };
+    });
+  }
+  sheetTotals() {
+    const sh = this.state.sheet; if (!sh) return { sum: 0, label: "" };
+    let extraSum = 0; const parts = [];
+    sh.groups.forEach(g => {
+      (this.state.sel[g.id] || []).forEach(n => {
+        const o = g.options.find(x => x.n === n);
+        if (o && o.price) extraSum += o.price;
+        parts.push(n);
+      });
+    });
+    return { sum: extraSum, label: parts.join(", ") };
+  }
+
+  fmt(v) { return v + " lei"; }
+
+  renderVals() {
+    const M = this.menu(), st = this.state;
+    const fee = st.mode === "livrare" ? (this.props.deliveryFee ?? 10) : 0;
+    const estMin = this.props.estMinutes ?? 60;
+    const qtyOf = id => st.cart.filter(l => l.id === id).reduce((a, l) => a + l.qty, 0);
+    const sub = st.cart.reduce((a, l) => a + l.price * l.qty, 0);
+    const total = sub + (sub > 0 ? fee : 0);
+    const days = ["DUMINICĂ", "LUNI", "MARȚI", "MIERCURI", "JOI", "VINERI", "SÂMBĂTĂ"], mo = ["IAN", "FEB", "MAR", "APR", "MAI", "IUN", "IUL", "AUG", "SEP", "OCT", "NOI", "DEC"];
+    const d = new Date();
+    // fotografii generate — id produs → fișier din img/produse/
+    const prodImg = {
+      sa1: "salata-bulgareasca", sa2: "salata-caesar",
+      sp5: "pastrama-oaie-mamaliguta", sp6: "cheesy-bacon-fried", sp7: "pui-shanghai",
+      pz5: "pizza-hash", pz13: "pizza-quatro-formagi", pz17: "pizza-crispy",
+      bg2: "burger-chicken-hash",
+      gr9: "cotlet-berbecut", gr10: "muschi-de-vita", gr11: "coasta-porc-bbq",
+      ti9: "tigaie-greceasca",
+      tr14: "carne-la-garnita", tr15: "coaste-pui-sos-picant",
+      pa8: "tagliatele-fructe-de-mare", pe4: "creveti-sos-vin",
+      pl3: "bruschete"
+    };
+    // model de produs — folosit doar în vederea de categorie
+    const prodVM = p => {
+      const q = qtyOf(p.id);
+      const gated = !!p.spicyOpt || p.cat === "pizza" || p.id === "mz";
+      return { id: p.id, name: p.name, w: p.w || "", desc: p.desc || "", priceTxt: this.fmt(p.price),
+        img: prodImg[p.id] ? "img/produse/" + prodImg[p.id] + ".png" : "",
+        hasImg: !!prodImg[p.id], noImg: !prodImg[p.id], thumbCls: prodImg[p.id] ? "hasphoto" : "",
+        badge: p.star ? "A CASEI" : p.spicy ? "PICANT" : p.post ? "DE POST" : "",
+        qty: q, inCart: q > 0 && !gated, notInCart: !(q > 0 && !gated),
+        add: () => this.openSheet(p),
+        inc: () => this.bump(p.id + "|", 1), dec: () => this.bump(p.id + "|", -1) };
+    };
+    const catCount = id => M.products.filter(p => p.cat === id).length;
+    const openCat = id => { this.setState({ activeCat: id, menuOpen: false }); setTimeout(() => this.scrollToId("menu"), 60); };
+    const catLink = id => { const c = M.categories.find(x => x.id === id); return { name: c.name, count: catCount(id), go: () => openCat(id) }; };
+
+    // categoria deschisă + preparatele ei
+    const active = st.activeCat ? M.categories.find(c => c.id === st.activeCat) : null;
+    const activeProducts = active ? M.products.filter(p => p.cat === active.id).map(prodVM) : [];
+    const catChips = active ? M.categories.map(c => {
+      const on = c.id === active.id;
+      return { id: c.id, name: c.name, go: () => openCat(c.id),
+        bord: on ? "#AD2118" : "rgba(69,20,0,.14)", bg: on ? "#AD2118" : "#FFFFFF", col: on ? "#FFFFFF" : "#451400" };
+    }) : [];
+
+    // Grila de categorii — cardurile din secțiunea de meniu
+    const catTags = { "meniul-zilei": "ZILNIC", "meniuri-speciale": "ALE CASEI", pizza: "2+1 GRATIS", platouri: "PENTRU GAȘCĂ" };
+    // fotografii generate — id categorie → fișier din img/categorii/
+    const catImg = {
+      "meniul-zilei": "meniul-zilei", "meniuri-speciale": "meniuri-speciale", "supe-ciorbe": "supe",
+      salate: "salate", peste: "peste", traditionale: "traditionale", paste: "paste",
+      "la-tigaie": "la-tigaie", gratar: "gratar", garnituri: "garnituri",
+      "salate-insotire": "salate-insotire", platouri: "platouri", pizza: "pizza",
+      burgers: "burgeri", desert: "desert"
+    };
+    const catCards = M.categories.map(c => {
+      const prices = M.products.filter(p => p.cat === c.id).map(p => p.price).filter(v => typeof v === "number");
+      const min = prices.length ? Math.min.apply(null, prices) : 0;
+      const n = catCount(c.id);
+      const tag = catTags[c.id] || "";
+      return {
+        id: c.id, name: c.name, NAME: c.name.toUpperCase(),
+        img: catImg[c.id] ? "img/categorii/" + catImg[c.id] + ".png" : "",
+        hasImg: !!catImg[c.id], noImg: !catImg[c.id],
+        tag, hasTag: !!tag,
+        sub: n ? n + (n === 1 ? " preparat" : " preparate") : "gătit zilnic",
+        priceTxt: min ? "de la " + min + " lei" : "", hasPrice: !!min,
+        go: () => openCat(c.id)
+      };
+    });
+
+    const groupDefs = [
+      { NAME: "ZILNIC & SPECIAL", ids: ["meniul-zilei", "meniuri-speciale"] },
+      { NAME: "FEL PRINCIPAL", ids: ["traditionale", "la-tigaie", "gratar", "peste", "paste"] },
+      { NAME: "PIZZA & BURGERI", ids: ["pizza", "burgers"] },
+      { NAME: "SUPE · SALATE · LÂNGĂ", ids: ["supe-ciorbe", "salate", "garnituri", "salate-insotire", "platouri"] },
+      { NAME: "DESERT", ids: ["desert"] }
+    ];
+    const menuGroups = groupDefs.map(g => ({ NAME: g.NAME, cats: g.ids.filter(id => M.categories.some(c => c.id === id)).map(catLink) }));
+    const cartLines = st.cart.map(l => ({ key: l.key, name: l.name, qty: l.qty, label: l.qty + "× " + l.name, extra: l.extra, sum: l.price * l.qty,
+      inc: () => this.bump(l.key, 1), dec: () => this.bump(l.key, -1), rm: () => this.rm(l.key) }));
+    const sh = st.sheet; const shT = this.sheetTotals();
+    const sheetGroups = sh ? sh.groups.map(g => ({ label: g.label, hint: g.hint, options: g.options.map(o => {
+      const on = (st.sel[g.id] || []).includes(o.n);
+      return { name: o.n, priceTxt: o.price ? "+" + o.price + " lei" : "", rad: g.type === "radio" ? "50%" : "3px",
+        bord: on ? "#AD2118" : "rgba(69,20,0,.14)", bg: on ? "rgba(173,33,24,.06)" : "transparent",
+        dot: on ? "#AD2118" : "transparent", dotBord: on ? "#AD2118" : "rgba(69,20,0,.35)", pick: () => this.pick(g, o) };
+    }) })) : [];
+    const payDefs = st.mode === "livrare"
+      ? [{ id: "card_online", name: "Card online", tag: "SECURIZAT" }, { id: "cash_liv", name: "Numerar la livrare", tag: "RAMBURS" }, { id: "card_liv", name: "Card la livrare", tag: "POS MOBIL" }]
+      : [{ id: "card_online", name: "Card online", tag: "SECURIZAT" }, { id: "cash_rid", name: "Numerar la ridicare", tag: "LA CASĂ" }, { id: "card_rid", name: "Card la ridicare", tag: "LA CASĂ" }];
+    const payOptions = payDefs.map(x => { const on = st.pay === x.id; return { ...x, bord: on ? "#AD2118" : "rgba(69,20,0,.14)", bg: on ? "rgba(173,33,24,.06)" : "transparent", dot: on ? "#AD2118" : "transparent", dotBord: on ? "#AD2118" : "rgba(69,20,0,.35)", pick: () => this.setState({ pay: x.id }) }; });
+    const canPlace = st.cart.length > 0 && st.custName.trim() && st.custPhone.trim() && (st.mode === "ridicare" || st.zone === "in");
+    const isLiv = st.mode === "livrare";
+    // avizierul = un slider de bannere late 16:9 din img/bannere/
+    const boards = [
+      {
+        img: "img/bannere/meniul-zilei.jpg",
+        // mâncarea din fundal stă în stânga, deci titlul merge în dreapta
+        head: "Meniul zilei", subhead: "Ciorbă + fel principal · 35 lei",
+        just: "flex-end", ta: "right", ai: "flex-end", tw: "44cqw",
+        badge: "MENIUL ZILEI · " + days[d.getDay()], title: "Meniul zilei — gătit azi",
+        sub: "Ciorbă + fel principal, în două variante. Preț pachet 35 lei · în restaurant 40 lei.",
+        cta: "Comandă meniul zilei", meta: "COMENZI: 0722 305 909",
+        go: () => this.openSheet(M.products.find(p => p.id === "mz"))
+      },
+      {
+        img: "img/bannere/pizza.jpg", scrim: true,
+        head: "Pizza 2+1 gratis", subhead: "Blat de 32 cm",
+        just: "flex-start", ta: "left", ai: "flex-start", tw: "29cqw",
+        badge: "OFERTĂ · PIZZA", title: "Pizza 2+1 gratis",
+        sub: "Blat de 32 cm, coaptă la comandă. Comanzi două, a treia e din partea casei.",
+        cta: "Vezi pizzele", meta: "BLAT 32 CM · DE LA 32 LEI",
+        go: () => { this.setState({ activeCat: "pizza", menuOpen: false }); setTimeout(() => this.scrollToId("menu"), 60); }
+      },
+      {
+        img: "img/bannere/mese-festive.jpg",
+        head: "Mese festive", subhead: "Până în 70 de persoane",
+        just: "flex-end", ta: "right", ai: "flex-end", tw: "44cqw",
+        badge: "EVENIMENTE", title: "Mese festive la H'ash",
+        sub: "Botezuri, aniversări, mese de firmă — până în 70 de persoane, meniu stabilit împreună cu tine.",
+        cta: "Sună pentru rezervare", meta: "REZERVĂRI: 0722 305 909",
+        go: () => { this.setState({ menuOpen: false }); this.scrollToId("footer"); }
+      }
+    ];
+    const nSlides = boards.length;
+    this.__nSlides = nSlides;
+    const slide = Math.min(st.slide, nSlides - 1);
+    const slideDots = boards.map((b, i) => ({
+      label: b.title,
+      bg: i === slide ? "var(--red)" : "rgba(69,20,0,.22)",
+      go: () => this.showSlide(i)
+    }));
+    return {
+      boards, boardsReady: true,
+      slideDots, trackShift: "translateX(-" + (slide * 100) + "%)",
+      prevSlide: () => this.moveSlide(-1), nextSlide: () => this.moveSlide(1),
+      estMin, prepMin: 30,
+      todayLabel: days[d.getDay()] + " · " + d.getDate() + " " + mo[d.getMonth()],
+      menuGroups, catCards,
+      menuOpen: st.menuOpen,
+      toggleMenu: () => this.setState({ menuOpen: !st.menuOpen }),
+      closeMenu: () => this.setState({ menuOpen: false }),
+      menuTabCol: st.menuOpen ? "#AD2118" : "#451400", menuTabU: st.menuOpen ? 1 : 0,
+      menuCaret: st.menuOpen ? "rotate(180deg)" : "none",
+      cartOpen: st.cartOpen, hasItems: st.cart.length > 0,
+      openCart: () => this.setState({ cartOpen: true, menuOpen: false }),
+      closeCart: () => this.setState({ cartOpen: false }),
+      goCheckout: () => this.setState({ cartOpen: false, checkoutOpen: true }),
+      goZona: () => { this.setState({ menuOpen: false }); this.scrollToId("zona"); },
+      goMenu: () => this.scrollToId("menu"), goMz: () => { this.setState({ menuOpen: false }); this.scrollToId("mz-band"); }, goFooter: () => { this.setState({ menuOpen: false }); this.scrollToId("footer"); },
+      openMz: () => this.openSheet(M.products.find(p => p.id === "mz")),
+      ticker: [
+        "Meniul zilei — ciorbă + fel principal · 35 lei",
+        "Pizza 32 cm · 2+1 gratis",
+        "Livrăm în raza de 4 km · est. " + estMin + " min",
+        "Peste 70 de preparate gătite zilnic",
+        "Comenzi: 0722 305 909",
+        "Deschis L–S 11:00 – 22:00 · D 12:00 – 22:00",
+        "Evenimente și mese festive — până în 70 de persoane"
+      ].map(txt => ({ txt })),
+      showCats: !active, showProducts: !!active,
+      activeName: active ? active.name : "",
+      activeNAME: active ? active.name.toUpperCase() : "",
+      activeNote: active ? (active.note || "") : "",
+      activeCountTxt: activeProducts.length + (activeProducts.length === 1 ? " preparat" : " preparate"),
+      activeProducts, catChips,
+      backToCats: () => this.setState({ activeCat: null }),
+      cartCount: st.cart.reduce((a, l) => a + l.qty, 0),
+      cartEmpty: st.cart.length === 0, cartLines,
+      subTxt: this.fmt(sub), feeTxt: sub > 0 && isLiv ? this.fmt(fee) : (isLiv ? "—" : "0 lei (ridicare)"),
+      totalTxt: this.fmt(total), totalBigTxt: total + " LEI",
+      sheetOpen: !!sh, sheetTitle: sh ? sh.p.name : "", sheetSub: sh ? (sh.p.w || "") + " · " + this.fmt(sh.p.price) : "",
+      sheetGroups, sheetTotalTxt: sh ? this.fmt(sh.p.price + shT.sum) : "",
+      closeSheet: () => this.setState({ sheet: null }),
+      sheetConfirm: () => { this.addLine(sh.p, null, shT.sum, shT.label); this.setState({ sheet: null }); },
+      checkoutOpen: st.checkoutOpen, openCheckout: () => this.setState({ checkoutOpen: true }),
+      closeCheckout: () => this.setState({ checkoutOpen: false, confirmed: false }),
+      eatClick: e => e.stopPropagation(),
+      notConfirmed: !st.confirmed, confirmed: st.confirmed,
+      isLivrare: isLiv, isRidicare: !isLiv,
+      setLivrare: () => this.setState({ mode: "livrare" }), setRidicare: () => this.setState({ mode: "ridicare", pay: st.pay === "cash_liv" || st.pay === "card_liv" ? "card_online" : st.pay }),
+      livBord: isLiv ? "#AD2118" : "rgba(69,20,0,.18)", livBg: isLiv ? "rgba(173,33,24,.06)" : "transparent", livCol: isLiv ? "#AD2118" : "rgba(69,20,0,.6)",
+      ridBord: !isLiv ? "#AD2118" : "rgba(69,20,0,.18)", ridBg: !isLiv ? "rgba(173,33,24,.06)" : "transparent", ridCol: !isLiv ? "#AD2118" : "rgba(69,20,0,.6)",
+      addr: st.addr, onAddr: e => this.setState({ addr: e.target.value, zone: null }),
+      checkAddr: () => { const inZone = st.addr.toLowerCase().includes("bragadiru"); this.setState({ zone: inZone ? "in" : "out", dist: inZone ? 2.1 : 5.6 }); },
+      zoneIn: st.zone === "in", zoneOut: st.zone === "out", distTxt: (st.dist + "").replace(".", ",") + " km",
+      custName: st.custName, onName: e => this.setState({ custName: e.target.value }),
+      custPhone: st.custPhone, onPhone: e => this.setState({ custPhone: e.target.value }),
+      custEmail: st.custEmail, onEmail: e => this.setState({ custEmail: e.target.value }),
+      custNotes: st.custNotes, onNotes: e => this.setState({ custNotes: e.target.value }),
+      payOptions,
+      placeBg: canPlace ? "#AD2118" : "rgba(69,20,0,.15)", placeCol: canPlace ? "#FFFFFF" : "rgba(69,20,0,.4)",
+      placeLabel: st.pay === "card_online" ? "Plătește " + total + " lei" : "Plasează comanda — " + total + " lei",
+      placeHint: canPlace ? "" : (st.cart.length === 0 ? "Coșul este gol." : (!st.custName.trim() || !st.custPhone.trim()) ? "Completează numele și telefonul." : "Verifică adresa — trebuie să fie în raza de 4 km."),
+      placeOrder: () => { if (!canPlace) return; this.setState({ confirmed: true, orderNo: "#H" + (1000 + Math.floor(Math.random() * 9000)) }); },
+      confirmMsg: st.mode === "livrare" ? "Comanda ta se pregătește și ajunge în aproximativ " + estMin + " de minute la " + (st.addr || "adresa ta") + "." : "Comanda ta se pregătește — o poți ridica din Str. Cireșar 22 în aproximativ 30 de minute.",
+      orderNo: st.orderNo,
+      resetOrder: () => this.setState({ checkoutOpen: false, confirmed: false, cart: [] })
+    };
+  }
+}
+</script>
+</body>
+</html>

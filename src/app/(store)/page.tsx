@@ -144,11 +144,12 @@ export default async function HomePage() {
               <div className="mt-6 flex flex-wrap gap-3">
                 <span className="inline-flex items-center gap-2 rounded-full border border-[var(--hairline-strong)] px-4 py-2 text-sm text-cream/85">
                   <PartyPopper className="size-4 text-gold" />
-                  Evenimente și mese festive · max. 30 persoane
+                  Evenimente și mese festive · max. 70 persoane
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full border border-[var(--hairline-strong)] px-4 py-2 text-sm text-cream/85">
                   <Clock className="size-4 text-gold" />
-                  Luni – Duminică · 10:00 – 22:00
+                  Luni – Sâmbătă · {settings.hours.mon?.open} – {settings.hours.mon?.close} ·
+                  Duminică · {settings.hours.sun?.open} – {settings.hours.sun?.close}
                 </span>
               </div>
             </div>
@@ -169,7 +170,8 @@ export default async function HomePage() {
                 </a>
               ))}
               <p className="text-center text-xs text-faint">
-                Comenzi telefonice: {settings.hours.mon?.open} – {settings.hours.mon?.close}, în fiecare zi
+                Comenzi telefonice: luni – sâmbătă {settings.hours.mon?.open} – {settings.hours.mon?.close},
+                duminică {settings.hours.sun?.open} – {settings.hours.sun?.close}
               </p>
             </div>
           </div>

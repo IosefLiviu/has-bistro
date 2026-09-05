@@ -12,6 +12,7 @@ export function Footer({
   hours: HoursSettings;
 }) {
   const week = hours.mon;
+  const sunday = hours.sun;
   return (
     <footer id="contact" className="relative mt-24 border-t border-[var(--hairline)] bg-coal/60">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
@@ -62,7 +63,11 @@ export function Footer({
           </h3>
           <p className="mt-4 flex items-center gap-2.5 text-sm text-cream">
             <Clock className="size-4 text-gold" />
-            Luni – Duminică{week ? `: ${week.open} – ${week.close}` : ""}
+            Luni – Sâmbătă{week ? `: ${week.open} – ${week.close}` : ""}
+          </p>
+          <p className="mt-2 flex items-center gap-2.5 text-sm text-cream">
+            <Clock className="size-4 text-gold" />
+            Duminică{sunday ? `: ${sunday.open} – ${sunday.close}` : ""}
           </p>
           <div className="mt-6 flex flex-col gap-2 text-sm">
             <Link href="/meniu" className="text-mute transition hover:text-gold">
