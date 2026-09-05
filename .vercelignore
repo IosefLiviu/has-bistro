@@ -1,0 +1,10 @@
+# Pe Vercel merge doar site-ul public. Restul e material de lucru.
+admin/
+docs/
+notes/
+scripts/
+supabase/
+uploads/
+.claude/
+.env.local
+README.md

@@ -2,22 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "hash-next",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3000
-    },
-    {
       "name": "hash-static",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "4321"],
+      "runtimeArgs": ["-m", "http.server", "4321", "--bind", "127.0.0.1"],
       "port": 4321
-    },
-    {
-      "name": "hash-admin",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "4322"],
-      "port": 4322
     }
   ]
 }

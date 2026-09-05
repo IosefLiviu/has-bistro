@@ -1,35 +1,16 @@
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
+# sistem
 .DS_Store
 *.pem
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# env files
+# chei
 .env
 .env*.local
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# generat de scripts/gen-admin-config.mjs
+# generat de scripts/gen-admin-config.mjs (conține cheia publishable)
 admin/config.js
 
-# artefacte de sesiune / deploy
+# artefacte de sesiune / unelte
 .playwright-mcp/
 .vercel
+supabase/.temp/
+node_modules/
